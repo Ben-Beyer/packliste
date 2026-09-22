@@ -2,7 +2,7 @@
    Macht die App offline startbar. Nach jeder Aenderung an den Dateien VERSION
    hochzaehlen, sonst bleiben installierte Geraete auf der alten Fassung. */
 
-const VERSION = "packliste-v4";
+const VERSION = "packliste-v5";
 const SHELL = VERSION + "-shell";
 const RUNTIME = VERSION + "-runtime";
 
