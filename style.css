@@ -285,11 +285,37 @@ main{padding-block:16px 8px}
 .row[aria-checked="true"] .label > .text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--dash)}
 .row[aria-checked="true"] .note{opacity:.7}
 
-/* Wer hat abgehakt */
-.by{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;color:var(--ink-soft)}
-.by .avatar{width:18px;height:18px;font-size:8.5px}
-.by .by-name{font-weight:600}
-.by .by-when{color:var(--muted)}
+/* Zweite Zeile: entweder wer abgehakt hat, oder wie die Position gemeint ist */
+.meta{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:12px;color:var(--ink-soft);flex-wrap:wrap}
+.meta .avatar{width:18px;height:18px;font-size:8.5px}
+.by-name{font-weight:600}
+.by-when{color:var(--muted)}
+.meta.mine .by-name{color:var(--accent)}
+
+/* "einer reicht" / "je Person" */
+.kind{
+  display:inline-flex;align-items:center;
+  font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);background:var(--surface-sunk);
+  padding:2px 8px;border-radius:99px;white-space:nowrap;
+}
+.kind.each{color:var(--accent);background:var(--accent-wash)}
+.kind-count{color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums}
+
+/* Punktreihe: wer die Position schon hat, wer noch nicht */
+.dots{display:flex;align-items:center}
+.dots .avatar{width:19px;height:19px;font-size:8.5px;margin-right:-3px;box-shadow:0 0 0 2px var(--surface)}
+.dots .avatar.off{background:transparent;color:var(--muted);border:1.5px dashed var(--dash);box-shadow:none}
+.dots .avatar:last-child{margin-right:0}
+
+/* Umschalter im Bearbeiten-Modus */
+.kindbtn{
+  flex:none;min-height:34px;padding:0 10px;margin-top:-4px;
+  border:1px solid var(--line);border-radius:9px;background:var(--surface);
+  font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted);white-space:nowrap;
+}
+.kindbtn.each{color:var(--accent);background:var(--accent-wash);border-color:color-mix(in srgb, var(--accent) 45%, transparent)}
 .by.mine .by-name{color:var(--accent)}
 
 li.is-hidden{display:none}
@@ -301,9 +327,10 @@ li.is-hidden{display:none}
   border:1px solid var(--line);background:var(--surface);
 }
 .del svg{width:15px;height:15px}
-.add-row{display:flex;gap:8px;padding:10px 0 4px;border-top:1px solid var(--line)}
-.add-row .field{min-height:42px;font-size:15px}
-.add-row .btn{min-height:42px;padding:0 14px;flex:none}
+.add-row{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 4px;border-top:1px solid var(--line)}
+.add-row .field{min-height:42px;font-size:15px;flex:1 1 100%}
+.add-row .kind-select{flex:1 1 140px;padding:0 10px;font-size:14px}
+.add-row .btn{min-height:42px;padding:0 14px;flex:0 0 auto}
 .edit-only{margin-top:12px}
 
 /* ---------- Fuss ---------- */

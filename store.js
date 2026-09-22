@@ -15,7 +15,21 @@ const KEY_TRIPS = "packliste.v2.mytrips";
 /* Mitglieder werden unter einem bereinigten Schluessel abgelegt, damit derselbe
    Name in beiden Betriebsarten dieselbe Zeile trifft. */
 export function memberKey(name) {
-  return String(name).toLowerCase().replace(/[^a-z0-9]/g, "") || "gast";
+  return String(name).toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]/g, "") || "gast";
+}
+
+/* Ein Haken wird als Map Person -> {by, at} abgelegt, damit bei Positionen, die
+   jeder einzeln packt, mehrere Leute nebeneinander abhaken koennen. Ganz frueh
+   angelegte Trips haben dort noch flach {by, at} stehen - das wird hier gerade
+   gebogen, damit alte und neue Trips gleich behandelt werden. */
+export function normalizeMarks(raw) {
+  if (!raw) return {};
+  if (typeof raw.by === "string") return { [memberKey(raw.by)]: { by: raw.by, at: raw.at } };
+  const out = {};
+  Object.keys(raw).forEach((k) => { if (raw[k] && typeof raw[k].by === "string") out[k] = raw[k]; });
+  return out;
 }
 
 /* Ohne 0/O/1/I - der Code wird abgetippt und vorgelesen. */
@@ -90,9 +104,18 @@ function localStore() {
       cb(read(code));
       return () => watchers.get(code).delete(cb);
     },
-    async setCheck(code, itemId, by) {
+    async setMark(code, itemId, mkey, by) {
       patch(code, (t) => {
-        if (by) t.checks[itemId] = { by, at: Date.now() };
+        const cur = normalizeMarks(t.checks[itemId]);
+        if (by) cur[mkey] = { by, at: Date.now() };
+        else delete cur[mkey];
+        if (Object.keys(cur).length) t.checks[itemId] = cur;
+        else delete t.checks[itemId];
+      });
+    },
+    async setMarks(code, itemId, marks) {
+      patch(code, (t) => {
+        if (marks && Object.keys(marks).length) t.checks[itemId] = marks;
         else delete t.checks[itemId];
       });
     },
@@ -152,11 +175,16 @@ async function cloudStore() {
     watchTrip(code, cb) {
       return fs.onSnapshot(ref(code), (snap) => cb(clean(snap)), () => cb(null));
     },
-    async setCheck(code, itemId, by) {
-      // Punktpfad = nur dieses eine Feld wird angefasst. Zwei Leute, die
-      // gleichzeitig verschiedene Positionen abhaken, ueberschreiben sich nicht.
+    async setMark(code, itemId, mkey, by) {
+      // Punktpfad bis auf die Person hinunter: Zwei Leute, die gleichzeitig
+      // dieselbe Position fuer sich abhaken, ueberschreiben sich nicht.
       await fs.updateDoc(ref(code), {
-        ["checks." + itemId]: by ? { by, at: Date.now() } : fs.deleteField()
+        [`checks.${itemId}.${mkey}`]: by ? { by, at: Date.now() } : fs.deleteField()
+      });
+    },
+    async setMarks(code, itemId, marks) {
+      await fs.updateDoc(ref(code), {
+        ["checks." + itemId]: (marks && Object.keys(marks).length) ? marks : fs.deleteField()
       });
     },
     async clearChecks(code) { await fs.updateDoc(ref(code), { checks: {} }); },

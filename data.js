@@ -1,45 +1,50 @@
-/* Vorlage fuer neue Trips - uebernommen aus Packliste.docx */
+/* Vorlage fuer neue Trips - uebernommen aus Packliste.docx
+
+   Aufbau einer Position:  ["Bezeichnung", "Notiz", "je"]
+     - "Notiz" ist die graue Zeile darunter, "" wenn keine
+     - "je"    heisst: das muss JEDER einzeln packen (Zahnbuerste, Unterhosen)
+       fehlt es, reicht es, wenn EINER es einpackt (Zelt, Kocher, Warndreieck) */
 
 export const TEMPLATE = [
   { icon: "📋", name: "Reisedokumente & Geld", items: [
-    ["Personalausweis/Pass"],
-    ["Kreditkarte(n) & etwas Bargeld", "PLN"],
-    ["Fahrzeugdokumente", "Führerschein, Fahrzeugschein, Versicherung"]
+    ["Personalausweis/Pass", "", "je"],
+    ["Kreditkarte(n) & etwas Bargeld", "PLN", "je"],
+    ["Fahrzeugdokumente", "Führerschein, Fahrzeugschein, Versicherung", "je"]
   ]},
   { icon: "👕", name: "Kleidung", sub: "September — mild bis warm", items: [
-    ["4–5 T-Shirts/Oberteile"],
-    ["2 längere Oberteile", "für kühlere Abende"],
-    ["Skiunterwäsche"],
-    ["1 leichte Jacke/Fleece"],
-    ["1 Regenjacke"],
-    ["2 Jeans/lange Hosen"],
-    ["1 Shorts"],
-    ["7 Unterhosen & Socken"],
-    ["Bequeme Wanderschuhe"],
-    ["Sneaker/Freizeitschuhe"],
-    ["Schlafanzug"],
-    ["Badekleidung", "falls See/Becken geplant"]
+    ["4–5 T-Shirts/Oberteile", "", "je"],
+    ["2 längere Oberteile", "für kühlere Abende", "je"],
+    ["Skiunterwäsche", "", "je"],
+    ["1 leichte Jacke/Fleece", "", "je"],
+    ["1 Regenjacke", "", "je"],
+    ["2 Jeans/lange Hosen", "", "je"],
+    ["1 Shorts", "", "je"],
+    ["7 Unterhosen & Socken", "", "je"],
+    ["Bequeme Wanderschuhe", "", "je"],
+    ["Sneaker/Freizeitschuhe", "", "je"],
+    ["Schlafanzug", "", "je"],
+    ["Badekleidung", "falls See/Becken geplant", "je"]
   ]},
   { icon: "🧴", name: "Toilettenartikel & Hygiene", items: [
-    ["Zahnbürste & Zahnpasta"],
-    ["Deodorant"],
-    ["Handtuch"],
+    ["Zahnbürste & Zahnpasta", "", "je"],
+    ["Deodorant", "", "je"],
+    ["Handtuch", "", "je"],
+    ["Medikamente", "persönlich benötigt", "je"],
     ["Kernseife/Duschgel"],
     ["Sonnencreme", "mindestens SPF 30"],
-    ["Medikamente", "persönlich benötigt"],
     ["Verbandsmaterial", "Blasenpflaster, Pflaster"],
     ["Klopapier"]
   ]},
   { icon: "📱", name: "Technik & Elektronik", items: [
-    ["Handy & Ladekabel"],
-    ["Powerbank"],
+    ["Handy & Ladekabel", "", "je"],
+    ["Powerbank", "", "je"],
+    ["Kopfhörer", "", "je"],
     ["Autoladeadapter", "KFZ-Ladegerät"],
     ["Kamera/GoPro", "optional"],
-    ["Kopfhörer"],
     ["SD-Karten"],
     ["Luftpumpe"]
   ]},
-  { icon: "🚗", name: "Auto-Ausrüstung", items: [
+  { icon: "🚗", name: "Auto-Ausrüstung", sub: "einmal fürs Auto, nicht pro Person", items: [
     ["Vollgetankter Tank"],
     ["Scheibenwischer wechseln"],
     ["Scheibenwischwasser"],
@@ -61,35 +66,35 @@ export const TEMPLATE = [
     ["Tankstellenadressen"]
   ]},
   { icon: "🍴", name: "Lebensmittel & Getränke", items: [
-    ["Reisetassen für Kaffee"],
+    ["Reisetassen für Kaffee", "", "je"],
+    ["Wasserflasche", "auffüllbar", "je"],
+    ["Geschirr", "", "je"],
+    ["Besteck", "", "je"],
     ["Snacks für unterwegs", "Riegel, Nüsse, Obst"],
-    ["Wasserflasche", "auffüllbar"],
     ["Sportdrink/Elektrolyte", "optional"],
-    ["Geschirr"],
     ["Kocher"],
     ["Kochtopf/Töpfe"],
-    ["Besteck"],
     ["Feuerzeug"],
     ["Panzertape"],
     ["Karabiner"],
     ["Schnur/Seil"]
   ]},
   { icon: "📖", name: "Sonstiges", items: [
+    ["Schlafsack", "", "je"],
+    ["Isomatte", "", "je"],
+    ["Kopfkissen", "", "je"],
+    ["Hängematte", "", "je"],
+    ["Zelt"],
+    ["Boot"],
+    ["Wasserkanister"],
     ["Müllbeutel"],
     ["USB-Stick", "für gemeinsame Fotos"],
-    ["Taschenmesser", "ins Gepäck, nicht ins Handgepäck"],
-    ["Boot"],
-    ["Schlafsack"],
-    ["Isomatte"],
-    ["Kopfkissen"],
-    ["Hängematten"],
-    ["Zelt"],
-    ["Wasserkanister"]
+    ["Taschenmesser", "ins Gepäck, nicht ins Handgepäck"]
   ]}
 ];
 
 /* Slug ohne Punkt und Schraegstrich - die IDs werden als Firestore-Feldnamen
-   unter `checks.<id>` benutzt, und dort trennt ein Punkt die Pfad-Ebenen. */
+   unter `checks.<id>.<person>` benutzt, und dort trennt ein Punkt die Ebenen. */
 export function slug(s) {
   return String(s).toLowerCase()
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
@@ -109,7 +114,8 @@ export function buildSections(template) {
       items: sec.items.map((it) => ({
         id: id + "__" + slug(it[0]),
         label: it[0],
-        note: it[1] || ""
+        note: it[1] || "",
+        each: it[2] === "je"
       }))
     };
   });

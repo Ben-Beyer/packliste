@@ -2,7 +2,7 @@
    Der Speicher steckt in store.js und kann geteilt (Firestore) oder nur lokal sein. */
 
 import { TEMPLATE, EMPTY_SECTIONS, buildSections, slug } from "./data.js";
-import { createStore, myTrips, rememberTrip, forgetTrip, hasFirebase, memberKey } from "./store.js";
+import { createStore, myTrips, rememberTrip, forgetTrip, hasFirebase, memberKey, normalizeMarks } from "./store.js";
 
 const KEY_USER = "packliste.v2.user";
 const $ = (id) => document.getElementById(id);
@@ -80,12 +80,41 @@ function showScreen(id) {
   ["screenName", "screenTrips", "screenTrip"].forEach((s) => { $(s).hidden = s !== id; });
 }
 
+/* Wer hat diese Position abgehakt, als Map Person -> {by, at} */
+function marksOf(trip, itemId) {
+  return normalizeMarks((trip.checks || {})[itemId]);
+}
+
+/* "erledigt" heisst nicht fuer alle Positionen dasselbe:
+   - jeder einzeln -> erledigt, sobald ICH sie abgehakt habe
+   - einer reicht  -> erledigt, sobald irgendwer sie abgehakt hat
+   Der Fortschritt beantwortet damit "was muss ich noch tun". */
+function isDone(trip, item, me) {
+  const marks = marksOf(trip, item.id);
+  return item.each ? !!marks[me] : Object.keys(marks).length > 0;
+}
+
 function countOf(trip) {
-  const total = (trip.sections || []).reduce((n, s) => n + s.items.length, 0);
-  const checks = trip.checks || {};
-  let done = 0;
-  (trip.sections || []).forEach((s) => s.items.forEach((i) => { if (checks[i.id]) done++; }));
+  const me = memberKey(user);
+  let done = 0, total = 0;
+  (trip.sections || []).forEach((s) => s.items.forEach((i) => {
+    total++;
+    if (isDone(trip, i, me)) done++;
+  }));
   return { done, total, pct: total ? Math.round(done / total * 100) : 0 };
+}
+
+/* Alle, die im Trip mitpacken - Mitglieder plus alle, die schon abgehakt haben */
+function roster(trip, marks) {
+  const seen = new Set();
+  const people = [];
+  Object.entries(trip.members || {}).forEach(([k, v]) => {
+    seen.add(k); people.push({ key: k, name: v.name });
+  });
+  Object.entries(marks).forEach(([k, v]) => {
+    if (!seen.has(k)) { seen.add(k); people.push({ key: k, name: v.by }); }
+  });
+  return people;
 }
 
 /* ---------- Namensfenster ---------- */
@@ -394,14 +423,20 @@ function buildList() {
     addLi.hidden = true;
     const addRow = document.createElement("form");
     addRow.className = "add-row";
-    addRow.innerHTML = '<input class="field" maxlength="60" placeholder="Was fehlt noch?" aria-label="Neue Position"><button type="submit" class="btn primary">Hinzufügen</button>';
+    addRow.innerHTML =
+      '<input class="field" maxlength="60" placeholder="Was fehlt noch?" aria-label="Neue Position">' +
+      '<select class="field kind-select" aria-label="Wer muss das packen?">' +
+        '<option value="one">einer reicht</option>' +
+        '<option value="each">jeder einzeln</option>' +
+      '</select>' +
+      '<button type="submit" class="btn primary">Hinzufügen</button>';
     addRow.addEventListener("submit", async (e) => {
       e.preventDefault();
       const input = addRow.querySelector("input");
       const label = input.value.trim();
       if (!label) return;
       input.value = "";
-      await addItem(sec.id, label);
+      await addItem(sec.id, label, addRow.querySelector("select").value === "each");
     });
     addLi.appendChild(addRow);
     list.appendChild(addLi);
@@ -428,11 +463,16 @@ function buildRow(sec, item) {
     note.textContent = item.note;
     btn.querySelector(".label").appendChild(note);
   }
-  const by = document.createElement("span");
-  by.className = "by";
-  by.hidden = true;
-  btn.querySelector(".label").appendChild(by);
-  btn.addEventListener("click", () => { if (!current.editing) toggle(item.id); });
+  const meta = document.createElement("span");
+  meta.className = "meta";
+  btn.querySelector(".label").appendChild(meta);
+  btn.addEventListener("click", () => { if (!current.editing) toggle(sec, item); });
+
+  const kindBtn = document.createElement("button");
+  kindBtn.type = "button";
+  kindBtn.className = "kindbtn edit-only";
+  kindBtn.hidden = true;
+  kindBtn.addEventListener("click", () => setKind(sec.id, item.id));
 
   const del = document.createElement("button");
   del.type = "button";
@@ -448,16 +488,17 @@ function buildRow(sec, item) {
   wrap.style.alignItems = "flex-start";
   wrap.style.gap = "8px";
   wrap.appendChild(btn);
+  wrap.appendChild(kindBtn);
   wrap.appendChild(del);
   li.appendChild(wrap);
 
-  current.nodes[item.id] = { li, btn, by, del };
+  current.nodes[item.id] = { li, btn, meta, del, kindBtn };
   return li;
 }
 
 function paint() {
   const trip = current.trip;
-  const checks = trip.checks || {};
+  const me = memberKey(user);
 
   (trip.sections || []).forEach((sec) => {
     const sn = current.secNodes[sec.id];
@@ -467,31 +508,55 @@ function paint() {
     sec.items.forEach((item) => {
       const n = current.nodes[item.id];
       if (!n) return;
-      const mark = checks[item.id];
-      const checked = !!mark;
+
+      const marks = marksOf(trip, item.id);
+      const mine = !!marks[me];
+      const anyone = Object.keys(marks).length > 0;
+      const checked = item.each ? mine : anyone;
       if (checked) done++;
+
       n.btn.setAttribute("aria-checked", checked ? "true" : "false");
       n.li.classList.toggle("is-hidden", current.ui.hideDone && checked && !current.editing);
       n.del.hidden = !current.editing;
+      n.kindBtn.hidden = !current.editing;
+      n.kindBtn.textContent = item.each ? "je Person" : "einer reicht";
+      n.kindBtn.classList.toggle("each", !!item.each);
+      n.kindBtn.setAttribute("aria-label", "„" + item.label + "“ umstellen auf " + (item.each ? "einer reicht" : "jeder einzeln"));
 
-      if (checked) {
-        n.by.hidden = false;
-        n.by.classList.toggle("mine", mark.by === user);
-        n.by.textContent = "";
-        n.by.appendChild(avatar(mark.by || "?"));
+      n.meta.textContent = "";
+      n.meta.classList.toggle("mine", !item.each && mine);
+
+      if (item.each) {
+        n.meta.appendChild(tag("je Person", "each"));
+        const people = roster(trip, marks);
+        const dots = document.createElement("span");
+        dots.className = "dots";
+        people.forEach((pp) => {
+          const a = avatar(pp.name, marks[pp.key] ? "on" : "off");
+          a.title = pp.name + (marks[pp.key] ? " hat's" : " fehlt noch");
+          dots.appendChild(a);
+        });
+        n.meta.appendChild(dots);
+        const cnt = document.createElement("span");
+        cnt.className = "kind-count";
+        cnt.textContent = Object.keys(marks).length + " von " + people.length;
+        n.meta.appendChild(cnt);
+      } else if (anyone) {
+        const mark = Object.values(marks)[0];
+        n.meta.appendChild(avatar(mark.by || "?"));
         const who = document.createElement("span");
         who.className = "by-name";
-        who.textContent = mark.by === user ? "von dir" : mark.by || "jemand";
-        n.by.appendChild(who);
+        who.textContent = marks[me] ? "von dir" : mark.by || "jemand";
+        n.meta.appendChild(who);
         const w = when(mark.at);
         if (w) {
           const tm = document.createElement("span");
           tm.className = "by-when";
           tm.textContent = "· " + w;
-          n.by.appendChild(tm);
+          n.meta.appendChild(tm);
         }
       } else {
-        n.by.hidden = true;
+        n.meta.appendChild(tag("einer reicht", ""));
       }
     });
 
@@ -518,10 +583,36 @@ function paint() {
   syncCollapseChip();
 }
 
-async function toggle(itemId) {
-  const checks = current.trip.checks || {};
+function tag(text, cls) {
+  const el = document.createElement("span");
+  el.className = "kind " + cls;
+  el.textContent = text;
+  return el;
+}
+
+async function toggle(sec, item) {
+  const me = memberKey(user);
+  const raw = (current.trip.checks || {})[item.id];
+  const legacy = raw && typeof raw.by === "string";
+  const marks = marksOf(current.trip, item.id);
+  const mine = !!marks[me];
+  const anyone = Object.keys(marks).length > 0;
+
   try {
-    await store.setCheck(current.code, itemId, checks[itemId] ? null : user);
+    if (item.each) {
+      if (legacy) {
+        // Einmalig vom alten flachen Format auf die Map umstellen
+        if (mine) delete marks[me]; else marks[me] = { by: user, at: Date.now() };
+        await store.setMarks(current.code, item.id, marks);
+      } else {
+        await store.setMark(current.code, item.id, me, mine ? null : user);
+      }
+    } else if (anyone) {
+      // "einer reicht": abwaehlen raeumt die Position ganz ab, egal wer sie gesetzt hat
+      await store.setMarks(current.code, item.id, null);
+    } else {
+      await store.setMark(current.code, item.id, me, user);
+    }
   } catch (err) {
     toast("Konnte nicht gespeichert werden.");
   }
@@ -537,14 +628,27 @@ $("editBtn").addEventListener("click", () => {
   paint();
 });
 
-async function addItem(sectionId, label) {
+async function addItem(sectionId, label, each) {
   const sections = structuredClone(current.trip.sections);
   const sec = sections.find((s) => s.id === sectionId);
   if (!sec) return;
   let id = sec.id + "__" + slug(label);
   const taken = new Set(sections.flatMap((s) => s.items.map((i) => i.id)));
   while (taken.has(id)) id += "-" + Math.floor(Math.random() * 100);
-  sec.items.push({ id, label, note: "" });
+  sec.items.push({ id, label, note: "", each: !!each });
+  try { await store.setSections(current.code, sections); }
+  catch (err) { toast("Konnte nicht gespeichert werden."); }
+}
+
+/* Zwischen "jeder einzeln" und "einer reicht" umstellen. Die gesetzten Haken
+   bleiben stehen - sie werden nur anders ausgewertet. */
+async function setKind(sectionId, itemId) {
+  const sections = structuredClone(current.trip.sections);
+  const sec = sections.find((s) => s.id === sectionId);
+  if (!sec) return;
+  const item = sec.items.find((i) => i.id === itemId);
+  if (!item) return;
+  item.each = !item.each;
   try { await store.setSections(current.code, sections); }
   catch (err) { toast("Konnte nicht gespeichert werden."); }
 }
@@ -555,7 +659,7 @@ async function removeItem(sectionId, itemId) {
   if (!sec) return;
   sec.items = sec.items.filter((i) => i.id !== itemId);
   try {
-    if ((current.trip.checks || {})[itemId]) await store.setCheck(current.code, itemId, null);
+    if ((current.trip.checks || {})[itemId]) await store.setMarks(current.code, itemId, null);
     await store.setSections(current.code, sections);
   } catch (err) { toast("Konnte nicht gespeichert werden."); }
 }

@@ -23,8 +23,29 @@ Die Roadtrip-Vorlage (8 Bereiche, 69 Positionen) stammt aus `../Packliste.docx`.
 - **Mitfahrer einladen:** Code oben rechts antippen → teilen. Wer den Code eingibt
   (oder den Link öffnet), packt dieselbe Liste mit.
 - **Abhaken:** Tippen. Erscheint auf allen Geräten im Trip, mit Name und Uhrzeit.
-- **Liste bearbeiten:** Positionen und Bereiche hinzufügen oder löschen — gilt für alle.
+- **Liste bearbeiten:** Positionen und Bereiche hinzufügen, löschen oder zwischen
+  *je Person* und *einer reicht* umstellen — gilt für alle.
 - **Alle Haken löschen:** Unten, zweistufig. Betrifft alle im Trip, nicht nur dich.
+
+## Zwei Arten von Positionen
+
+Jede Position ist eins von beiden, erkennbar am Schildchen in der Zeile:
+
+| | Bedeutung | Anzeige |
+| --- | --- | --- |
+| **je Person** | Muss jeder für sich packen — Zahnbürste, Unterhosen, Schlafsack | Punktreihe mit allen Mitfahrern: ausgefüllt = hat's, gestrichelt = fehlt noch, dazu „2 von 3" |
+| **einer reicht** | Einmal für die Gruppe — Zelt, Kocher, Warndreieck, Öl prüfen | Nach dem Abhaken: wer es gepackt hat und wann |
+
+Der Fortschritt oben beantwortet **„was muss ich noch tun"**: Eine *je Person*-Position
+zählt erst als erledigt, wenn **du** sie abgehakt hast; eine *einer reicht*-Position,
+sobald **irgendwer** sie abgehakt hat. Jeder sieht darum seinen eigenen Zähler.
+
+Abwählen: Bei *je Person* nimmst du nur deinen eigenen Haken weg. Bei *einer reicht*
+räumt das Antippen die Position für alle wieder ab — sie ist ja dann nicht mehr erledigt.
+
+Die Zuordnung in der Vorlage ist ein Vorschlag (30 × je Person, 39 × einer reicht).
+Umstellen geht jederzeit über *Liste bearbeiten*; gesetzte Haken bleiben dabei stehen
+und werden nur anders ausgewertet.
 
 ## Firebase einrichten
 
@@ -72,9 +93,9 @@ Die Startvorlage für neue Trips steht in `data.js` als `TEMPLATE`:
 
 ```js
 { icon:"📱", name:"Technik & Elektronik", items:[
-  ["Handy & Ladekabel"],
-  ["Autoladeadapter","KFZ-Ladegerät"],   // zweiter Eintrag = graue Notiz darunter
-]}
+  ["Handy & Ladekabel", "", "je"],       // "je" = jeder einzeln
+  ["Autoladeadapter", "KFZ-Ladegerät"],  // ohne "je" = einer reicht
+]}                                       // mittlerer Eintrag = graue Notiz darunter
 ```
 
 Das ändert nur **neue** Trips. Bestehende Trips bearbeitet man in der App selbst,
@@ -93,8 +114,9 @@ Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen** (`packliste-v2` �
 | Trips, Listen, Haken | Firestore, ein Dokument pro Trip unter `trips/<code>` |
 | dasselbe im Einzelmodus | `localStorage`, `packliste.v2.trip.<code>` |
 
-Haken werden als Punktpfad geschrieben (`checks.<positions-id>`), deshalb überschreiben
-sich zwei Leute nicht, die gleichzeitig verschiedene Positionen abhaken.
+Ein Haken steht unter `checks.<positions-id>.<person>`. Weil bis auf die Person
+hinunter adressiert wird, überschreiben sich zwei Leute auch dann nicht, wenn sie
+gleichzeitig dieselbe *je Person*-Position für sich abhaken.
 
 Offline gesetzte Haken liegen in Firestores lokaler Warteschlange und gehen raus,
 sobald wieder Netz da ist.
