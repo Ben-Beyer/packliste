@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Roadtrip Packliste</title>
+<meta name="description" content="Abhakbare Packliste für den September-Roadtrip.">
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<meta name="theme-color" content="#EFF1ED" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111614" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Packliste">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    color-scheme:light dark;
+    --ground:#EFF1ED;
+    --surface:#FFFFFF;
+    --surface-sunk:#E7EAE4;
+    --ink:#17211C;
+    --ink-soft:#4C5A52;
+    --muted:#7A8880;
+    --line:#D6DCD4;
+    --dash:#BAC4B8;
+    --accent:#0F6E4F;
+    --accent-ink:#FFFFFF;
+    --accent-wash:#E2EFE8;
+    --signal:#B33A22;
+    --shadow:0 1px 2px rgba(23,33,28,.06), 0 8px 24px -16px rgba(23,33,28,.28);
+    --radius:14px;
+    --font-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+    --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#111614;
+      --surface:#1A201C;
+      --surface-sunk:#141A17;
+      --ink:#E9EEE8;
+      --ink-soft:#B3BFB6;
+      --muted:#8D9A92;
+      --line:#2A332D;
+      --dash:#3A4740;
+      --accent:#54C795;
+      --accent-ink:#0C1712;
+      --accent-wash:#1C2E26;
+      --signal:#F08163;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#111614;
+    --surface:#1A201C;
+    --surface-sunk:#141A17;
+    --ink:#E9EEE8;
+    --ink-soft:#B3BFB6;
+    --muted:#8D9A92;
+    --line:#2A332D;
+    --dash:#3A4740;
+    --accent:#54C795;
+    --accent-ink:#0C1712;
+    --accent-wash:#1C2E26;
+    --signal:#F08163;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html{background:var(--ground);-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    min-height:100%;
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:16px;
+    line-height:1.45;
+    -webkit-tap-highlight-color:transparent;
+  }
+  img{max-width:100%}
+  [hidden]{display:none !important}
+  button{font:inherit;color:inherit;background:none;border:none;margin:0;padding:0;cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+  /* ---------- Kopf ---------- */
+  .topbar{
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+    padding-top:env(safe-area-inset-top, 0px);
+  }
+  .wrap{max-width:640px;margin:0 auto;padding-inline:16px}
+  .topbar .wrap{padding-block:12px 10px}
+
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11px;font-weight:600;
+    letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .headline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:2px}
+  .headline h1{
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:clamp(26px,7vw,34px);
+    letter-spacing:-.02em;line-height:1.05;margin:0;
+  }
+  .tally{
+    font-family:var(--font-mono);font-weight:600;font-size:15px;
+    font-variant-numeric:tabular-nums;color:var(--ink-soft);white-space:nowrap;
+  }
+  .tally b{color:var(--accent);font-weight:600}
+
+  .track{
+    position:relative;height:7px;margin-top:10px;
+    border-radius:99px;background:var(--surface-sunk);overflow:hidden;
+  }
+  .track::before{
+    content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(90deg,var(--dash) 0 9px,transparent 9px 20px);
+    opacity:.85;
+  }
+  .fill{
+    position:relative;height:100%;width:0;border-radius:99px;background:var(--accent);
+    transition:width .35s cubic-bezier(.2,.7,.3,1);
+  }
+
+  .tools{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .chip{
+    display:inline-flex;align-items:center;gap:7px;
+    min-height:36px;padding:0 13px;
+    border:1px solid var(--line);border-radius:99px;
+    background:var(--surface);color:var(--ink-soft);
+    font-size:13.5px;font-weight:500;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .chip[aria-pressed="true"]{
+    background:var(--accent-wash);
+    border-color:color-mix(in srgb, var(--accent) 45%, transparent);
+    color:var(--accent);
+  }
+  .chip svg{width:15px;height:15px;flex:none}
+
+  /* ---------- Bereiche ---------- */
+  main{padding-block:16px 8px}
+  .sections{display:flex;flex-direction:column;gap:12px}
+
+  .section{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;
+  }
+  .section-head{
+    display:flex;align-items:center;gap:11px;
+    width:100%;min-height:56px;padding:10px 14px;text-align:left;
+  }
+  .badge{
+    font-size:17px;line-height:1;width:30px;height:30px;flex:none;
+    display:grid;place-items:center;border-radius:9px;background:var(--surface-sunk);
+  }
+  .section-title{flex:1;min-width:0}
+  .section-title .name{
+    font-family:var(--font-display);font-weight:600;font-size:16.5px;
+    letter-spacing:-.005em;display:block;
+  }
+  .section-title .sub{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+  .count{
+    font-family:var(--font-mono);font-size:12.5px;font-weight:600;
+    font-variant-numeric:tabular-nums;color:var(--muted);
+    padding:3px 8px;border-radius:99px;background:var(--surface-sunk);flex:none;
+  }
+  .section.done .count{background:var(--accent-wash);color:var(--accent)}
+  .section.done .badge{background:var(--accent-wash)}
+  .caret{width:16px;height:16px;flex:none;color:var(--muted);transition:transform .2s ease}
+  .section.collapsed .caret{transform:rotate(-90deg)}
+
+  ul{list-style:none;margin:0;padding:0 14px 8px}
+  li + li .row{border-top:1px solid var(--line)}
+
+  .row{
+    display:flex;align-items:flex-start;gap:12px;
+    width:100%;min-height:52px;padding:11px 0;text-align:left;
+    -webkit-user-select:none;user-select:none;
+  }
+  .box{
+    position:relative;flex:none;width:23px;height:23px;margin-top:1px;
+    border:2px solid var(--dash);border-radius:7px;background:var(--surface);
+    transition:background .15s, border-color .15s;
+  }
+  .box svg{
+    position:absolute;inset:0;margin:auto;width:15px;height:15px;
+    color:var(--accent-ink);opacity:0;transform:scale(.6);
+    transition:opacity .13s, transform .18s cubic-bezier(.2,1.5,.5,1);
+  }
+  .row[aria-checked="true"] .box{background:var(--accent);border-color:var(--accent)}
+  .row[aria-checked="true"] .box svg{opacity:1;transform:scale(1)}
+
+  .label{flex:1;min-width:0;font-size:15.5px;font-weight:500;line-height:1.35}
+  .note{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:2px}
+  .row[aria-checked="true"] .label{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--dash)}
+  .row[aria-checked="true"] .note{opacity:.7;text-decoration:none}
+
+  li.is-hidden{display:none}
+
+  /* ---------- Fuss ---------- */
+  footer{
+    border-top:1px solid var(--line);margin-top:20px;
+    padding-block:20px calc(34px + env(safe-area-inset-bottom, 0px));
+  }
+  .reset-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .reset{
+    min-height:44px;padding:0 16px;border-radius:10px;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
+    font-size:14.5px;font-weight:500;
+    display:inline-flex;align-items:center;gap:8px;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .reset:hover{color:var(--signal);border-color:color-mix(in srgb, var(--signal) 40%, transparent)}
+  .reset.confirm{background:var(--signal);border-color:var(--signal);color:#fff}
+  .reset.confirm:hover{color:#fff}
+  .cancel{min-height:44px;padding:0 12px;color:var(--muted);font-size:14px}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.5}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+  }
+  @media (display-mode: standalone){
+    .hint.install{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="eyebrow">Roadtrip · September</div>
+    <div class="headline">
+      <h1>Packliste</h1>
+      <div class="tally"><b id="tallyDone">0</b>/<span id="tallyTotal">0</span> gepackt</div>
+    </div>
+    <div class="track" role="progressbar" aria-label="Fortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar">
+      <div class="fill" id="fill"></div>
+    </div>
+    <div class="tools">
+      <button type="button" class="chip" id="hideDone" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.2A9.6 9.6 0 0 1 12 5c6 0 9 7 9 7a16 16 0 0 1-2.6 3.6M6.5 7.6A16 16 0 0 0 3 12s3 7 9 7a9 9 0 0 0 4-.9"/></svg>
+        Erledigte ausblenden
+      </button>
+      <button type="button" class="chip" id="collapseAll" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h13M8 12h13M8 20h13M3 4l2 2 2-2M3 12l2 2 2-2M3 20l2 2 2-2"/></svg>
+        <span id="collapseLabel">Alle einklappen</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="sections" id="sections"></div>
+</main>
+
+<footer class="wrap">
+  <div class="reset-row" id="resetRow">
+    <button type="button" class="reset" id="resetBtn">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      <span id="resetLabel">Liste zurücksetzen</span>
+    </button>
+  </div>
+  <p class="hint install">Zum Installieren: in Safari öffnen, Teilen-Symbol, <strong>Zum Home-Bildschirm</strong>. Danach läuft die Liste offline, die Haken bleiben auf diesem Gerät gespeichert.</p>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var DATA = [
+    { icon:"📋", name:"Reisedokumente & Geld", items:[
+      ["Personalausweis/Pass"],
+      ["Kreditkarte(n) & etwas Bargeld","PLN"],
+      ["Fahrzeugdokumente","Führerschein, Fahrzeugschein, Versicherung"]
+    ]},
+    { icon:"👕", name:"Kleidung", sub:"September — mild bis warm", items:[
+      ["4–5 T-Shirts/Oberteile"],
+      ["2 längere Oberteile","für kühlere Abende"],
+      ["Skiunterwäsche"],
+      ["1 leichte Jacke/Fleece"],
+      ["1 Regenjacke"],
+      ["2 Jeans/lange Hosen"],
+      ["1 Shorts"],
+      ["7 Unterhosen & Socken"],
+      ["Bequeme Wanderschuhe"],
+      ["Sneaker/Freizeitschuhe"],
+      ["Schlafanzug"],
+      ["Badekleidung","falls See/Becken geplant"]
+    ]},
+    { icon:"🧴", name:"Toilettenartikel & Hygiene", items:[
+      ["Zahnbürste & Zahnpasta"],
+      ["Deodorant"],
+      ["Handtuch"],
+      ["Kernseife/Duschgel"],
+      ["Sonnencreme","mindestens SPF 30"],
+      ["Medikamente","persönlich benötigt"],
+      ["Verbandsmaterial","Blasenpflaster, Pflaster"],
+      ["Klopapier"]
+    ]},
+    { icon:"📱", name:"Technik & Elektronik", items:[
+      ["Handy & Ladekabel"],
+      ["Powerbank"],
+      ["Autoladeadapter","KFZ-Ladegerät"],
+      ["Kamera/GoPro","optional"],
+      ["Kopfhörer"],
+      ["SD-Karten"],
+      ["Luftpumpe"]
+    ]},
+    { icon:"🚗", name:"Auto-Ausrüstung", items:[
+      ["Vollgetankter Tank"],
+      ["Scheibenwischer wechseln"],
+      ["Scheibenwischwasser"],
+      ["Öl prüfen"],
+      ["Ersatzflüssigkeiten","Kühlwasser, Scheibenwischwasser"],
+      ["Ersatzreifen/Reifenpannenset"],
+      ["Warnwesten"],
+      ["Warndreieck"],
+      ["Taschenlampe/Headlamp"],
+      ["Ersatzbatterien"],
+      ["Verbandsmaterial"],
+      ["Ersatzsicherungen"],
+      ["Starthilfekabel","optional"],
+      ["Handbremsenflüssigkeit","optional"]
+    ]},
+    { icon:"🗺️", name:"Navigation & Planung", items:[
+      ["Navi/Handy mit Offline-Karten","Maps.me, Google Maps Download"],
+      ["Papierstraßenkarte"],
+      ["Tankstellenadressen"]
+    ]},
+    { icon:"🍴", name:"Lebensmittel & Getränke", items:[
+      ["Reisetassen für Kaffee"],
+      ["Snacks für unterwegs","Riegel, Nüsse, Obst"],
+      ["Wasserflasche","auffüllbar"],
+      ["Sportdrink/Elektrolyte","optional"],
+      ["Geschirr"],
+      ["Kocher"],
+      ["Kochtopf/Töpfe"],
+      ["Besteck"],
+      ["Feuerzeug"],
+      ["Panzertape"],
+      ["Karabiner"],
+      ["Schnur/Seil"]
+    ]},
+    { icon:"📖", name:"Sonstiges", items:[
+      ["Müllbeutel"],
+      ["USB-Stick","für gemeinsame Fotos"],
+      ["Taschenmesser","ins Gepäck, nicht ins Handgepäck"],
+      ["Boot"],
+      ["Schlafsack"],
+      ["Isomatte"],
+      ["Kopfkissen"],
+      ["Hängematten"],
+      ["Zelt"],
+      ["Wasserkanister"]
+    ]}
+  ];
+
+  var KEY_DONE = "packliste.v1.done";
+  var KEY_UI   = "packliste.v1.ui";
+
+  function slug(s){
+    return s.toLowerCase()
+      .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+      .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  }
+
+  // Stabile IDs: Bereichs-Slug + Positions-Slug, damit Haken ein Update ueberleben.
+  DATA.forEach(function(sec){
+    sec.id = slug(sec.name);
+    sec.items = sec.items.map(function(it){
+      return { id: sec.id + "/" + slug(it[0]), label: it[0], note: it[1] || "" };
+    });
+  });
+
+  var TOTAL = DATA.reduce(function(n,s){ return n + s.items.length; }, 0);
+
+  function load(key, fallback){
+    try{
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(e){ return fallback; }
+  }
+  function save(key, value){
+    try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+  }
+
+  var done = {};
+  (function(){
+    var stored = load(KEY_DONE, []);
+    if (Array.isArray(stored)) stored.forEach(function(id){ done[id] = true; });
+  })();
+
+  var ui = load(KEY_UI, null) || {};
+  if (typeof ui.hideDone !== "boolean") ui.hideDone = false;
+  if (!Array.isArray(ui.collapsed)) ui.collapsed = [];
+  var collapsed = {};
+  ui.collapsed.forEach(function(id){ collapsed[id] = true; });
+
+  function persistDone(){
+    save(KEY_DONE, Object.keys(done).filter(function(id){ return done[id]; }));
+  }
+  function persistUi(){
+    save(KEY_UI, {
+      hideDone: ui.hideDone,
+      collapsed: Object.keys(collapsed).filter(function(id){ return collapsed[id]; })
+    });
+  }
+
+  var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+
+  var elSections = document.getElementById("sections");
+  var elFill = document.getElementById("fill");
+  var elBar = document.getElementById("bar");
+  var elDone = document.getElementById("tallyDone");
+  var elTotal = document.getElementById("tallyTotal");
+  var nodes = {};
+  var secNodes = {};
+
+  elTotal.textContent = TOTAL;
+
+  DATA.forEach(function(sec){
+    var root = document.createElement("section");
+    root.className = "section";
+
+    var head = document.createElement("button");
+    head.type = "button";
+    head.className = "section-head";
+    head.innerHTML =
+      '<span class="badge" aria-hidden="true">' + sec.icon + '</span>' +
+      '<span class="section-title"><span class="name"></span>' +
+      (sec.sub ? '<span class="sub"></span>' : '') + '</span>' +
+      '<span class="count"></span>' +
+      '<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    head.querySelector(".name").textContent = sec.name;
+    if (sec.sub) head.querySelector(".sub").textContent = sec.sub;
+
+    var list = document.createElement("ul");
+    list.id = "list-" + sec.id;
+    head.setAttribute("aria-controls", list.id);
+
+    sec.items.forEach(function(item){
+      var li = document.createElement("li");
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "row";
+      btn.setAttribute("role", "checkbox");
+      btn.dataset.id = item.id;
+      btn.innerHTML = '<span class="box" aria-hidden="true">' + CHECK + '</span><span class="label"></span>';
+      var label = btn.querySelector(".label");
+      label.appendChild(document.createTextNode(item.label));
+      if (item.note){
+        var note = document.createElement("span");
+        note.className = "note";
+        note.textContent = item.note;
+        label.appendChild(note);
+      }
+      btn.addEventListener("click", function(){ toggle(item.id); });
+      li.appendChild(btn);
+      list.appendChild(li);
+      nodes[item.id] = btn;
+    });
+
+    head.addEventListener("click", function(){
+      collapsed[sec.id] = !collapsed[sec.id];
+      persistUi();
+      applySection(sec);
+      syncCollapseChip();
+    });
+
+    root.appendChild(head);
+    root.appendChild(list);
+    elSections.appendChild(root);
+    secNodes[sec.id] = { root: root, head: head, count: head.querySelector(".count"), list: list };
+  });
+
+  function applyItem(item){
+    var btn = nodes[item.id];
+    var checked = !!done[item.id];
+    btn.setAttribute("aria-checked", checked ? "true" : "false");
+    btn.parentNode.classList.toggle("is-hidden", ui.hideDone && checked);
+  }
+
+  function applySection(sec){
+    var n = secNodes[sec.id];
+    var packed = sec.items.filter(function(i){ return done[i.id]; }).length;
+    n.count.textContent = packed + "/" + sec.items.length;
+    n.root.classList.toggle("done", packed === sec.items.length);
+    var isCollapsed = !!collapsed[sec.id];
+    n.root.classList.toggle("collapsed", isCollapsed);
+    n.list.hidden = isCollapsed;
+    n.head.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+  }
+
+  function applyTotals(){
+    var packed = Object.keys(done).filter(function(id){ return done[id]; }).length;
+    var pct = TOTAL ? Math.round(packed / TOTAL * 100) : 0;
+    elDone.textContent = packed;
+    elFill.style.width = pct + "%";
+    elBar.setAttribute("aria-valuenow", String(pct));
+  }
+
+  function renderAll(){
+    DATA.forEach(function(sec){
+      sec.items.forEach(applyItem);
+      applySection(sec);
+    });
+    applyTotals();
+  }
+
+  function toggle(id){
+    done[id] = !done[id];
+    if (!done[id]) delete done[id];
+    persistDone();
+    var sec = DATA.filter(function(s){ return id.indexOf(s.id + "/") === 0; })[0];
+    var item = sec.items.filter(function(i){ return i.id === id; })[0];
+    applyItem(item);
+    applySection(sec);
+    applyTotals();
+  }
+
+  var elHide = document.getElementById("hideDone");
+  elHide.setAttribute("aria-pressed", ui.hideDone ? "true" : "false");
+  elHide.addEventListener("click", function(){
+    ui.hideDone = !ui.hideDone;
+    elHide.setAttribute("aria-pressed", ui.hideDone ? "true" : "false");
+    persistUi();
+    renderAll();
+  });
+
+  var elCollapse = document.getElementById("collapseAll");
+  var elCollapseLabel = document.getElementById("collapseLabel");
+  function allCollapsed(){ return DATA.every(function(s){ return collapsed[s.id]; }); }
+  function syncCollapseChip(){
+    var all = allCollapsed();
+    elCollapse.setAttribute("aria-pressed", all ? "true" : "false");
+    elCollapseLabel.textContent = all ? "Alle ausklappen" : "Alle einklappen";
+  }
+  elCollapse.addEventListener("click", function(){
+    var collapse = !allCollapsed();
+    DATA.forEach(function(s){
+      if (collapse) collapsed[s.id] = true; else delete collapsed[s.id];
+      applySection(s);
+    });
+    persistUi();
+    syncCollapseChip();
+  });
+
+  // Zuruecksetzen - zweistufig, damit es nicht versehentlich passiert
+  var elResetRow = document.getElementById("resetRow");
+  var elReset = document.getElementById("resetBtn");
+  var elResetLabel = document.getElementById("resetLabel");
+  var armed = false, armTimer = null, cancelBtn = null;
+
+  function disarm(){
+    armed = false;
+    clearTimeout(armTimer);
+    elReset.classList.remove("confirm");
+    elResetLabel.textContent = "Liste zurücksetzen";
+    if (cancelBtn){ cancelBtn.remove(); cancelBtn = null; }
+  }
+
+  elReset.addEventListener("click", function(){
+    if (!armed){
+      armed = true;
+      elReset.classList.add("confirm");
+      elResetLabel.textContent = "Wirklich alle Haken löschen";
+      cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "cancel";
+      cancelBtn.textContent = "Abbrechen";
+      cancelBtn.addEventListener("click", disarm);
+      elResetRow.appendChild(cancelBtn);
+      armTimer = setTimeout(disarm, 6000);
+      return;
+    }
+    done = {};
+    persistDone();
+    disarm();
+    renderAll();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  syncCollapseChip();
+  renderAll();
+
+  if ("serviceWorker" in navigator && location.protocol !== "file:"){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
