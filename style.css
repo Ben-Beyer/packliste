@@ -204,6 +204,7 @@ button{font:inherit;color:inherit;background:none;border:none;margin:0;padding:0
   color:var(--accent);
 }
 .chip svg{width:15px;height:15px;flex:none}
+.chip.strong{border-color:color-mix(in srgb, var(--accent) 45%, transparent);color:var(--accent);background:var(--accent-wash)}
 
 /* ---------- Trip-Liste ---------- */
 main{padding-block:16px 8px}
@@ -327,10 +328,27 @@ li.is-hidden{display:none}
   border:1px solid var(--line);background:var(--surface);
 }
 .del svg{width:15px;height:15px}
+/* Hinzufuegen: erst eine ruhige Zeile, aufgeklappt das volle Formular */
+.add-open{
+  display:flex;align-items:center;gap:9px;width:100%;
+  min-height:48px;padding:11px 0;
+  border-top:1px solid var(--line);
+  color:var(--muted);font-size:14.5px;font-weight:500;text-align:left;
+}
+.add-open .plus{
+  width:23px;height:23px;flex:none;
+  display:grid;place-items:center;border-radius:7px;
+  border:1.5px dashed var(--dash);
+  font-size:15px;line-height:1;color:var(--muted);
+}
+.add-open:hover{color:var(--accent)}
+.add-open:hover .plus{border-color:var(--accent);border-style:solid;color:var(--accent)}
+
 .add-row{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 4px;border-top:1px solid var(--line)}
 .add-row .field{min-height:42px;font-size:15px;flex:1 1 100%}
 .add-row .kind-select{flex:1 1 140px;padding:0 10px;font-size:14px}
 .add-row .btn{min-height:42px;padding:0 14px;flex:0 0 auto}
+.add-row .add-done{color:var(--muted)}
 .edit-only{margin-top:12px}
 
 /* ---------- Fuss ---------- */

@@ -23,8 +23,14 @@ Die Roadtrip-Vorlage (8 Bereiche, 69 Positionen) stammt aus `../Packliste.docx`.
 - **Mitfahrer einladen:** Code oben rechts antippen → teilen. Wer den Code eingibt
   (oder den Link öffnet), packt dieselbe Liste mit.
 - **Abhaken:** Tippen. Erscheint auf allen Geräten im Trip, mit Name und Uhrzeit.
-- **Liste bearbeiten:** Positionen und Bereiche hinzufügen, löschen oder zwischen
-  *je Person* und *einer reicht* umstellen — gilt für alle.
+- **Position hinzufügen:** Zwei Wege, beide ohne Umweg über einen Bearbeiten-Modus.
+  Unten in jedem Bereich steht eine Zeile *+ Position hinzufügen* — die bleibt nach dem
+  Absenden offen, man kann also mehrere hintereinander eintippen. Und oben in der
+  Leiste liegt der grüne Knopf *Position hinzufügen*, der von jeder Scroll-Position aus
+  erreichbar ist und den Bereich zur Auswahl stellt. Neue Bereiche legt der Knopf
+  *+ Bereich hinzufügen* ganz unten an.
+- **Ändern & löschen:** Schaltet je Zeile einen Papierkorb und einen Umschalter zwischen
+  *je Person* und *einer reicht* frei. Alles gilt für alle im Trip.
 - **Alle Haken löschen:** Unten, zweistufig. Betrifft alle im Trip, nicht nur dich.
 
 ## Zwei Arten von Positionen

@@ -320,19 +320,30 @@ async function doJoin(code) {
 
 /* ---------- Trip-Ansicht ---------- */
 
-let current = { code: null, trip: null, unsub: null, sig: "", ui: null, editing: false, nodes: {}, secNodes: {} };
+let current = { code: null, trip: null, unsub: null, sig: "", ui: null, editing: false, addOpen: null, nodes: {}, secNodes: {} };
+
+function closeAdd(sectionId) {
+  const sn = current.secNodes[sectionId];
+  if (!sn) return;
+  const li = sn.list.querySelector(".add-li");
+  if (!li) return;
+  li.querySelector(".add-row").hidden = true;
+  li.querySelector(".add-open").hidden = false;
+  if (current.addOpen === sectionId) current.addOpen = null;
+}
 
 $("backBtn").addEventListener("click", () => { location.hash = "#/trips"; });
 
 function openTrip(code) {
   if (current.unsub) current.unsub();
-  current = { code, trip: null, unsub: null, sig: "", ui: readUi(code), editing: false, nodes: {}, secNodes: {} };
+  current = { code, trip: null, unsub: null, sig: "", ui: readUi(code), editing: false, addOpen: null, nodes: {}, secNodes: {} };
   $("tripName").textContent = "Lädt …";
   $("tripCode").textContent = code;
   $("sections").textContent = "";
   $("hideDone").setAttribute("aria-pressed", current.ui.hideDone ? "true" : "false");
   $("editBtn").setAttribute("aria-pressed", "false");
-  $("addSectionBtn").hidden = true;
+  if (addSectionForm) { addSectionForm.remove(); addSectionForm = null; }
+  $("addSectionBtn").hidden = false;
   showScreen("screenTrip");
 
   let announced = false;
@@ -417,19 +428,26 @@ function buildList() {
 
     sec.items.forEach((item) => list.appendChild(buildRow(sec, item)));
 
-    // Zeile zum Hinzufuegen, nur im Bearbeiten-Modus sichtbar
+    // Zeile zum Hinzufuegen - immer da, aufgeklappt erst nach dem Antippen
     const addLi = document.createElement("li");
-    addLi.className = "add-li edit-only";
-    addLi.hidden = true;
+    addLi.className = "add-li";
+
+    const addOpen = document.createElement("button");
+    addOpen.type = "button";
+    addOpen.className = "add-open";
+    addOpen.innerHTML = '<span class="plus" aria-hidden="true">+</span>Position hinzufügen';
+
     const addRow = document.createElement("form");
     addRow.className = "add-row";
+    addRow.hidden = true;
     addRow.innerHTML =
       '<input class="field" maxlength="60" placeholder="Was fehlt noch?" aria-label="Neue Position">' +
       '<select class="field kind-select" aria-label="Wer muss das packen?">' +
         '<option value="one">einer reicht</option>' +
         '<option value="each">jeder einzeln</option>' +
       '</select>' +
-      '<button type="submit" class="btn primary">Hinzufügen</button>';
+      '<button type="submit" class="btn primary">Hinzufügen</button>' +
+      '<button type="button" class="btn add-done">Fertig</button>';
     addRow.addEventListener("submit", async (e) => {
       e.preventDefault();
       const input = addRow.querySelector("input");
@@ -437,9 +455,30 @@ function buildList() {
       if (!label) return;
       input.value = "";
       await addItem(sec.id, label, addRow.querySelector("select").value === "each");
+      input.focus();
     });
+
+    addOpen.addEventListener("click", () => {
+      addOpen.hidden = true;
+      addRow.hidden = false;
+      current.addOpen = sec.id;
+      addRow.querySelector("input").focus();
+    });
+    addRow.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeAdd(sec.id);
+    });
+    const doneBtn = addRow.querySelector(".add-done");
+    if (doneBtn) doneBtn.addEventListener("click", () => closeAdd(sec.id));
+
+    addLi.appendChild(addOpen);
     addLi.appendChild(addRow);
     list.appendChild(addLi);
+
+    // War die Zeile vor einem Neuaufbau offen, bleibt sie offen
+    if (current.addOpen === sec.id) {
+      addOpen.hidden = true;
+      addRow.hidden = false;
+    }
 
     root.appendChild(head);
     root.appendChild(list);
@@ -566,8 +605,7 @@ function paint() {
     sn.root.classList.toggle("collapsed", collapsed);
     sn.list.hidden = collapsed;
     sn.head.setAttribute("aria-expanded", collapsed ? "false" : "true");
-    const addLi = sn.list.querySelector(".add-li");
-    if (addLi) addLi.hidden = !current.editing;
+    // Die Hinzufuegen-Zeile bleibt sichtbar, auch wenn "Erledigte ausblenden" laeuft
   });
 
   const c = countOf(trip);
@@ -620,11 +658,49 @@ async function toggle(sec, item) {
 
 /* ---------- Liste bearbeiten ---------- */
 
+const dlgAdd = $("dlgAdd");
+
+$("addItemBtn").addEventListener("click", () => {
+  const sel = $("addSection");
+  sel.textContent = "";
+  (current.trip.sections || []).forEach((sec) => {
+    const opt = document.createElement("option");
+    opt.value = sec.id;
+    opt.textContent = (sec.icon ? sec.icon + "  " : "") + sec.name;
+    sel.appendChild(opt);
+  });
+  if (current.lastSection && sel.querySelector(`option[value="${current.lastSection}"]`)) {
+    sel.value = current.lastSection;
+  }
+  $("addLabel").value = "";
+  $("addErr").hidden = true;
+  dlgAdd.showModal();
+  $("addLabel").focus();
+});
+
+$("addForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const label = $("addLabel").value.trim();
+  if (!label) return;
+  const sectionId = $("addSection").value;
+  const sec = (current.trip.sections || []).find((x) => x.id === sectionId);
+  current.lastSection = sectionId;
+
+  // Eingeklappte Bereiche aufklappen, sonst landet die neue Position im Verborgenen
+  const at = current.ui.collapsed.indexOf(sectionId);
+  if (at >= 0) {
+    current.ui.collapsed.splice(at, 1);
+    writeUi(current.code, current.ui);
+  }
+  $("addLabel").value = "";
+  await addItem(sectionId, label, $("addKind").value === "each");
+  $("addLabel").focus();
+  toast("„" + label + "“ steht jetzt unter " + (sec ? sec.name : "der Liste") + ".");
+});
+
 $("editBtn").addEventListener("click", () => {
   current.editing = !current.editing;
   $("editBtn").setAttribute("aria-pressed", current.editing ? "true" : "false");
-  $("addSectionBtn").hidden = !current.editing;
-  if (addSectionForm) { addSectionForm.remove(); addSectionForm = null; }
   paint();
 });
 
@@ -635,9 +711,25 @@ async function addItem(sectionId, label, each) {
   let id = sec.id + "__" + slug(label);
   const taken = new Set(sections.flatMap((s) => s.items.map((i) => i.id)));
   while (taken.has(id)) id += "-" + Math.floor(Math.random() * 100);
-  sec.items.push({ id, label, note: "", each: !!each });
-  try { await store.setSections(current.code, sections); }
-  catch (err) { toast("Konnte nicht gespeichert werden."); }
+  const item = { id, label, note: "", each: !!each };
+  sec.items.push(item);
+
+  // Die neue Zeile selbst einhaengen und die Signatur vorziehen: Sonst baut der
+  // gleich eintreffende Schnappschuss die ganze Liste neu, das Eingabefeld
+  // verliert den Fokus und auf dem iPhone klappt die Tastatur weg.
+  const sn = current.secNodes[sectionId];
+  if (sn) {
+    current.sig = JSON.stringify(sections);
+    sn.list.insertBefore(buildRow(sec, item), sn.list.querySelector(".add-li"));
+  }
+
+  try {
+    await store.setSections(current.code, sections);
+  } catch (err) {
+    current.sig = "";              // Neuaufbau erzwingen, die Zeile war nur geraten
+    toast("Konnte nicht gespeichert werden.");
+    if (current.trip) renderTrip();
+  }
 }
 
 /* Zwischen "jeder einzeln" und "einer reicht" umstellen. Die gesetzten Haken
