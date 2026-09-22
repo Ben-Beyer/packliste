@@ -1,19 +1,33 @@
 /* Roadtrip Packliste - Service Worker
-   Macht die App offline nutzbar. Beim Aendern der Liste die Version hochzaehlen,
-   damit iPhones die neue Fassung ziehen statt der alten aus dem Cache. */
+   Macht die App offline startbar. Nach jeder Aenderung an den Dateien VERSION
+   hochzaehlen, sonst bleiben installierte Geraete auf der alten Fassung. */
 
-const VERSION = "packliste-v1";
+const VERSION = "packliste-v2";
 const SHELL = VERSION + "-shell";
 const RUNTIME = VERSION + "-runtime";
 
 const SHELL_FILES = [
   "./",
   "./index.html",
+  "./style.css",
+  "./app.js",
+  "./store.js",
+  "./data.js",
+  "./firebase-config.js",
   "./manifest.webmanifest",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/favicon-32.png"
+];
+
+/* Fremde Hosts, deren Dateien sich nicht aendern: Schriften und das Firebase-SDK.
+   Firestore selbst (firestore.googleapis.com) steht bewusst NICHT hier - die
+   Verbindung muss ungefiltert durchlaufen, sonst bricht die Live-Synchronisierung. */
+const THIRD_PARTY = [
+  "https://fonts.googleapis.com",
+  "https://fonts.gstatic.com",
+  "https://www.gstatic.com"
 ];
 
 self.addEventListener("install", (event) => {
@@ -40,7 +54,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
 
-  // Seitenaufruf: erst Netz (damit Aenderungen ankommen), sonst Cache.
+  // Seitenaufruf: erst Netz, damit Aenderungen ankommen, sonst aus dem Cache.
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
@@ -55,8 +69,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Schriften von Google: einmal holen, danach aus dem Cache bedienen.
-  if (url.origin === "https://fonts.googleapis.com" || url.origin === "https://fonts.gstatic.com") {
+  if (THIRD_PARTY.includes(url.origin)) {
     event.respondWith(
       caches.match(req).then((hit) => {
         const net = fetch(req).then((res) => {
@@ -72,16 +85,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Eigene Dateien: Cache zuerst.
+  // Eigene Dateien: erst Netz, bei Fehler aus dem Cache. So zieht ein iPhone
+  // Aenderungen an app.js/style.css sofort, funktioniert aber ohne Netz weiter.
   if (url.origin === self.location.origin) {
     event.respondWith(
-      caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => {
-        if (res && res.ok) {
-          const copy = res.clone();
-          caches.open(SHELL).then((c) => c.put(req, copy));
-        }
-        return res;
-      }))
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(SHELL).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req, { ignoreSearch: true }))
     );
   }
 });
