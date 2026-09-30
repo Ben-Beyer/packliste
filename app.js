@@ -795,7 +795,8 @@ function schritt(name) {
   } catch (err) {
     $("errorText").textContent = String(err && err.message || err) +
       " Prüfe die Internetverbindung; wenn das bleibt, stimmt in der Firebase-Einrichtung etwas nicht.";
-    ctx.motion.intro(() => showScreen("screenError"));
+    ctx.motion.intro();
+    showScreen("screenError");
     return;
   }
 
@@ -815,7 +816,8 @@ function schritt(name) {
     console.error("Baustein defekt:", err);
     $("errorText").textContent = "Ein Baustein der App ließ sich nicht starten: "
       + (err && err.message || err) + " — bitte neu laden.";
-    ctx.motion.intro(() => showScreen("screenError"));
+    ctx.motion.intro();
+    showScreen("screenError");
     return;
   }
 
@@ -825,7 +827,10 @@ function schritt(name) {
   };
 
   schritt("module-fertig");
-  ctx.motion.intro(() => { schritt("bereit"); route(); });
+  // Erst die App zeigen, dann den Vorhang lueften - nie andersherum.
+  route();
+  schritt("bereit");
+  ctx.motion.intro();
 
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});

@@ -78,17 +78,22 @@ export async function initMotion() {
 
 /* ---------- Intro ---------- */
 
-function intro(onFertig) {
+/* Der Vorhang ist reine Deko. Er haelt die App nicht auf: Die App startet
+   dahinter sofort weiter, und der Vorhang verschwindet, wenn die Animation
+   durch ist - spaetestens aber nach der Notfrist. Animationen laufen ueber
+   requestAnimationFrame, und das steht still, solange ein Fenster verdeckt oder
+   im Hintergrund ist. Ohne diese Frist bliebe die App dann im Vorhang haengen. */
+function intro() {
   const loader = document.getElementById("loader");
-  if (!loader) { if (onFertig) onFertig(); return; }
-  if (!an()) {
-    loader.remove();
-    if (onFertig) onFertig();
-    return;
-  }
+  if (!loader) return;
+
+  const weg = () => { if (loader.isConnected) loader.remove(); };
+  const notfrist = setTimeout(weg, 4000);
+
+  if (!an()) { clearTimeout(notfrist); weg(); return; }
 
   const tl = gsap.timeline({
-    onComplete: () => { loader.remove(); if (onFertig) onFertig(); }
+    onComplete: () => { clearTimeout(notfrist); weg(); }
   });
   tl.to("#loaderMark", { scale: 1, opacity: 1, duration: .7, ease: "expo.out" })
     .to("#loaderLine", { scaleX: 1, duration: .9, ease: "expo.inOut" }, "-=.45")
