@@ -767,6 +767,10 @@ window.addEventListener("offline", () => { if (ctx.trip) renderTrip(); });
 
 /* ---------- Start ---------- */
 
+/* Wie weit ist der Start gekommen? Steht als data-schritt am <html>-Element.
+   Klingt nach Kleinkram, hat aber zwei stumme Haenger aufgedeckt, bei denen
+   weder die Konsole noch der Bildschirm etwas verraten haben. Kostet nichts
+   und ist das Erste, wonach man schaut, wenn die App nicht hochkommt. */
 function schritt(name) {
   window.__schritt = name;
   try { document.documentElement.dataset.schritt = name; } catch (e) {}
