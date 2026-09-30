@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Packliste</title>
-<meta name="description" content="Gemeinsame Packlisten für Trips — abhaken, und jeder sieht, wer was erledigt hat.">
+<title>Reisebuddy</title>
+<meta name="description" content="Reisen planen, gemeinsam packen, Fotos sammeln und die gefahrene Route auf der Karte sehen.">
 
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Packliste">
+<meta name="apple-mobile-web-app-title" content="Reisebuddy">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,10 +27,10 @@
 <section class="screen gate" id="screenName" hidden>
   <div class="gate-card">
     <span class="gate-mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l6-3 6 3 6-3V3l-6 3-6-3-6 3z"/><path d="M9 3v12M15 6v12"/></svg>
     </span>
     <h1 id="gateTitle">Wie sollen dich die anderen nennen?</h1>
-    <p id="gateText">Dein Name steht an jedem Haken, den du setzt — so sieht jeder im Trip, wer was schon erledigt hat.</p>
+    <p id="gateText">Dein Name steht an jedem Haken und an jedem Foto — so sieht jeder in der Reise, wer was gemacht hat.</p>
     <form id="nameForm" autocomplete="off">
       <input class="field" id="nameInput" type="text" maxlength="24" placeholder="z. B. Ben" aria-label="Dein Name" required>
       <button type="submit" class="btn primary block" id="nameSubmit">Los geht's</button>
@@ -39,14 +39,26 @@
   </div>
 </section>
 
-<!-- ============ Trip-Übersicht ============ -->
+<!-- ============ Fehler beim Start ============ -->
+<section class="screen gate" id="screenError" hidden>
+  <div class="gate-card">
+    <span class="gate-mark bad" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 8v5M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+    </span>
+    <h1>Keine Verbindung zum Reise-Speicher</h1>
+    <p id="errorText">Die App konnte sich nicht anmelden.</p>
+    <button type="button" class="btn primary block" onclick="location.reload()">Nochmal versuchen</button>
+  </div>
+</section>
+
+<!-- ============ Reise-Übersicht ============ -->
 <section class="screen" id="screenTrips" hidden>
   <header class="topbar">
     <div class="wrap">
       <div class="bar-row">
         <div class="bar-title">
-          <div class="eyebrow">Packlisten</div>
-          <h1>Deine Trips</h1>
+          <div class="eyebrow">Reisebuddy</div>
+          <h1>Deine Reisen</h1>
         </div>
         <button type="button" class="who" id="whoBtn" title="Namen ändern">
           <span class="avatar" id="whoAvatar" aria-hidden="true"></span>
@@ -60,90 +72,221 @@
     <div class="trip-list" id="tripList"></div>
 
     <div class="empty" id="tripsEmpty" hidden>
-      <p><strong>Noch kein Trip.</strong></p>
-      <p>Leg einen an — du bekommst einen Code, den du an die Mitfahrer weitergibst. Wer den Code eingibt, packt dieselbe Liste mit.</p>
+      <p><strong>Noch keine Reise.</strong></p>
+      <p>Leg eine an — du bekommst einen Code, den du an die Mitreisenden weitergibst. Wer den Code hat, plant, packt und sammelt Fotos mit. Alle anderen sehen nichts davon.</p>
     </div>
 
     <div class="actions">
-      <button type="button" class="btn primary" id="newTripBtn">Neuen Trip anlegen</button>
+      <button type="button" class="btn primary" id="newTripBtn">Neue Reise anlegen</button>
       <button type="button" class="btn" id="joinTripBtn">Mit Code beitreten</button>
     </div>
 
-    <p class="hint" id="modeHint"></p>
     <p class="hint install">Zum Installieren: in Safari öffnen, Teilen-Symbol, <strong>Zum Home-Bildschirm</strong>.</p>
   </main>
 </section>
 
-<!-- ============ Ein Trip ============ -->
+<!-- ============ Eine Reise ============ -->
 <section class="screen" id="screenTrip" hidden>
   <header class="topbar">
     <div class="wrap">
       <div class="bar-row">
-        <button type="button" class="icon-btn" id="backBtn" aria-label="Zurück zu den Trips">
+        <button type="button" class="icon-btn" id="backBtn" aria-label="Zurück zu den Reisen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <div class="bar-title">
           <div class="eyebrow"><span id="tripMembers">—</span></div>
-          <h1 id="tripName">Trip</h1>
+          <h1 id="tripName">Reise</h1>
         </div>
         <button type="button" class="code-chip" id="codeBtn" title="Code teilen">
           <span id="tripCode">------</span>
         </button>
       </div>
-
-      <div class="headline">
-        <div class="tally"><b id="tallyDone">0</b>/<span id="tallyTotal">0</span> gepackt</div>
-        <div class="sync" id="syncNote"></div>
-      </div>
-
-      <div class="track" role="progressbar" aria-label="Fortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar">
-        <div class="fill" id="fill"></div>
-      </div>
-
-      <div class="tools">
-        <button type="button" class="chip" id="hideDone" aria-pressed="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.2A9.6 9.6 0 0 1 12 5c6 0 9 7 9 7a16 16 0 0 1-2.6 3.6M6.5 7.6A16 16 0 0 0 3 12s3 7 9 7a9 9 0 0 0 4-.9"/></svg>
-          Erledigte ausblenden
-        </button>
-        <button type="button" class="chip" id="collapseAll" aria-pressed="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h13M8 12h13M8 20h13M3 4l2 2 2-2M3 12l2 2 2-2M3 20l2 2 2-2"/></svg>
-          <span id="collapseLabel">Alle einklappen</span>
-        </button>
-        <button type="button" class="chip strong" id="addItemBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          Position hinzufügen
-        </button>
-        <button type="button" class="chip" id="editBtn" aria-pressed="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-          Ändern &amp; löschen
-        </button>
-      </div>
+      <div class="sync" id="syncNote"></div>
     </div>
   </header>
 
-  <main class="wrap">
-    <div class="sections" id="sections"></div>
-    <button type="button" class="btn ghost block" id="addSectionBtn">+ Bereich hinzufügen</button>
-  </main>
+  <!-- ---- Reiter: Übersicht ---- -->
+  <main class="wrap panel" id="panelOverview" hidden>
+    <div class="hero-card">
+      <div class="hero-when" id="tripWhen">Kein Zeitraum eingetragen</div>
+      <div class="hero-count" id="tripCountdown"></div>
+      <button type="button" class="btn ghost" id="tripEditBtn">Name &amp; Zeitraum ändern</button>
+    </div>
 
-  <footer class="wrap">
-    <div class="reset-row" id="resetRow">
-      <button type="button" class="reset" id="resetBtn">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-        <span id="resetLabel">Alle Haken löschen</span>
+    <div class="tiles">
+      <button type="button" class="tile" data-goto="pack">
+        <span class="tile-label">Packliste</span>
+        <span class="tile-value" id="tilePack">0/0</span>
+        <span class="tile-note" id="tilePackNote">für dich erledigt</span>
+      </button>
+      <button type="button" class="tile" data-goto="plan">
+        <span class="tile-label">Stationen</span>
+        <span class="tile-value" id="tileStops">0</span>
+        <span class="tile-note" id="tileStopsNote">geplant</span>
+      </button>
+      <button type="button" class="tile" data-goto="photos">
+        <span class="tile-label">Fotos</span>
+        <span class="tile-value" id="tilePhotos">0</span>
+        <span class="tile-note" id="tilePhotosNote">hochgeladen</span>
+      </button>
+      <button type="button" class="tile" data-goto="map">
+        <span class="tile-label">Strecke</span>
+        <span class="tile-value" id="tileKm">0</span>
+        <span class="tile-note">km zwischen Fotos</span>
       </button>
     </div>
-    <p class="hint" id="resetHint"></p>
-    <button type="button" class="linkish" id="leaveBtn">Trip aus meiner Liste entfernen</button>
-  </footer>
+
+    <section class="card">
+      <h2 class="card-title">Wer ist dabei</h2>
+      <div class="people" id="tripPeople"></div>
+      <p class="hint">Jeder mit dem Code kann mitmachen. Ohne Code findet die Reise niemand — sie lässt sich auch nicht auflisten.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Einladen</h2>
+      <div class="code-big" id="codeBigInline">------</div>
+      <div class="actions inline">
+        <button type="button" class="btn primary" id="shareBtn">Einladung teilen</button>
+        <button type="button" class="btn" id="copyCodeBtn">Code kopieren</button>
+      </div>
+    </section>
+
+    <button type="button" class="linkish" id="leaveBtn">Reise aus meiner Liste entfernen</button>
+  </main>
+
+  <!-- ---- Reiter: Packliste ---- -->
+  <main class="wrap panel" id="panelPack" hidden>
+    <div class="headline">
+      <div class="tally"><b id="tallyDone">0</b>/<span id="tallyTotal">0</span> gepackt</div>
+    </div>
+    <div class="track" role="progressbar" aria-label="Fortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar">
+      <div class="fill" id="fill"></div>
+    </div>
+
+    <div class="tools">
+      <button type="button" class="chip" id="hideDone" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.2A9.6 9.6 0 0 1 12 5c6 0 9 7 9 7a16 16 0 0 1-2.6 3.6M6.5 7.6A16 16 0 0 0 3 12s3 7 9 7a9 9 0 0 0 4-.9"/></svg>
+        Erledigte ausblenden
+      </button>
+      <button type="button" class="chip" id="collapseAll" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h13M8 12h13M8 20h13M3 4l2 2 2-2M3 12l2 2 2-2M3 20l2 2 2-2"/></svg>
+        <span id="collapseLabel">Alle einklappen</span>
+      </button>
+      <button type="button" class="chip strong" id="addItemBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Position hinzufügen
+      </button>
+      <button type="button" class="chip" id="editBtn" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        Ändern &amp; löschen
+      </button>
+    </div>
+
+    <div class="sections" id="sections"></div>
+    <button type="button" class="btn ghost block" id="addSectionBtn">+ Bereich hinzufügen</button>
+
+    <div class="reset-block">
+      <div class="reset-row" id="resetRow">
+        <button type="button" class="reset" id="resetBtn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          <span id="resetLabel">Alle Haken löschen</span>
+        </button>
+      </div>
+      <p class="hint" id="resetHint"></p>
+    </div>
+  </main>
+
+  <!-- ---- Reiter: Plan ---- -->
+  <main class="wrap panel" id="panelPlan" hidden>
+    <div class="panel-head">
+      <h2 class="panel-title">Stationen</h2>
+      <button type="button" class="btn primary" id="stopAddBtn">+ Station</button>
+    </div>
+
+    <div class="stop-list" id="stopList"></div>
+
+    <div class="empty" id="stopEmpty" hidden>
+      <p><strong>Noch nichts geplant.</strong></p>
+      <p>Trag ein, wo ihr hinwollt — mit Datum und Ort. Stationen mit Ort erscheinen als geplante Route auf der Karte.</p>
+    </div>
+
+    <p class="hint">Die Ortssuche kommt von OpenStreetMap und ist kostenlos. Ohne Ort lässt sich eine Station trotzdem speichern, sie taucht dann nur nicht auf der Karte auf.</p>
+  </main>
+
+  <!-- ---- Reiter: Fotos ---- -->
+  <main class="wrap panel" id="panelPhotos" hidden>
+    <div class="panel-head">
+      <h2 class="panel-title">Fotos</h2>
+      <button type="button" class="btn primary" id="photoAddBtn">+ Hochladen</button>
+    </div>
+    <input type="file" id="photoInput" accept="image/*" multiple hidden>
+
+    <div class="progress" id="photoProgress" hidden>
+      <div class="progress-text" id="photoProgressText">Wird hochgeladen …</div>
+      <div class="track"><div class="fill" id="photoProgressBar"></div></div>
+    </div>
+
+    <p class="hint" id="photoStats"></p>
+
+    <div class="grid" id="photoGrid"></div>
+
+    <div class="empty" id="photoEmpty" hidden>
+      <p><strong>Noch keine Fotos.</strong></p>
+      <p>Lade Bilder von der Reise hoch. Steht im Foto ein Aufnahmeort, setzt die Karte daraus eure Route zusammen. Die Bilder werden vor dem Hochladen verkleinert.</p>
+    </div>
+  </main>
+
+  <!-- ---- Reiter: Karte ---- -->
+  <main class="panel panel-map" id="panelMap" hidden>
+    <div class="map-head wrap">
+      <span class="map-stats" id="mapStats"></span>
+      <button type="button" class="btn" id="mapFit">Alles zeigen</button>
+    </div>
+    <div class="map-canvas" id="mapCanvas"></div>
+    <p class="hint wrap" id="mapNote" hidden></p>
+  </main>
+
+  <!-- ---- Reiterleiste ---- -->
+  <nav class="tabbar" id="tabbar" aria-label="Bereiche der Reise">
+    <button type="button" class="tab" data-tab="overview" aria-current="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 21v-7h6v7"/></svg>
+      <span>Übersicht</span>
+    </button>
+    <button type="button" class="tab" data-tab="pack">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+      <span>Packliste</span>
+    </button>
+    <button type="button" class="tab" data-tab="plan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span>Plan</span>
+    </button>
+    <button type="button" class="tab" data-tab="photos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6l1.5-2h5L16 6"/><circle cx="12" cy="13" r="3.2"/></svg>
+      <span>Fotos</span>
+    </button>
+    <button type="button" class="tab" data-tab="map">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+      <span>Karte</span>
+    </button>
+  </nav>
 </section>
 
 <!-- ============ Dialoge ============ -->
 <dialog id="dlgNew">
   <form method="dialog" class="dlg" id="newForm">
-    <h2>Neuer Trip</h2>
-    <label class="lbl" for="newName">Wie heißt der Trip?</label>
+    <h2>Neue Reise</h2>
+    <label class="lbl" for="newName">Wie heißt die Reise?</label>
     <input class="field" id="newName" maxlength="40" placeholder="z. B. Polen September" required>
+    <div class="two">
+      <div>
+        <label class="lbl" for="newStart">Von</label>
+        <input class="field" id="newStart" type="date">
+      </div>
+      <div>
+        <label class="lbl" for="newEnd">Bis</label>
+        <input class="field" id="newEnd" type="date">
+      </div>
+    </div>
     <fieldset class="choice">
       <legend class="lbl">Womit starten?</legend>
       <label class="opt"><input type="radio" name="tpl" value="roadtrip" checked><span><strong>Roadtrip-Packliste</strong><small>69 Positionen in 8 Bereichen</small></span></label>
@@ -153,6 +296,29 @@
     <div class="dlg-actions">
       <button type="button" class="btn" data-close>Abbrechen</button>
       <button type="submit" class="btn primary" id="newSubmit">Anlegen</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgTrip">
+  <form method="dialog" class="dlg" id="tripForm">
+    <h2>Reise ändern</h2>
+    <label class="lbl" for="editName">Name</label>
+    <input class="field" id="editName" maxlength="40" required>
+    <div class="two">
+      <div>
+        <label class="lbl" for="editStart">Von</label>
+        <input class="field" id="editStart" type="date">
+      </div>
+      <div>
+        <label class="lbl" for="editEnd">Bis</label>
+        <input class="field" id="editEnd" type="date">
+      </div>
+    </div>
+    <p class="err" id="editErr" hidden></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" data-close>Abbrechen</button>
+      <button type="submit" class="btn primary">Speichern</button>
     </div>
   </form>
 </dialog>
@@ -177,11 +343,40 @@
   </form>
 </dialog>
 
+<dialog id="dlgStop">
+  <form method="dialog" class="dlg" id="stopForm">
+    <h2 id="stopDlgTitle">Neue Station</h2>
+    <label class="lbl" for="stopName">Name</label>
+    <input class="field" id="stopName" maxlength="60" placeholder="z. B. Danzig" required>
+    <label class="lbl" for="stopDate">Wann</label>
+    <input class="field" id="stopDate" type="date">
+    <label class="lbl" for="stopQuery">Ort suchen</label>
+    <div class="search-row">
+      <input class="field" id="stopQuery" maxlength="80" placeholder="Ort, Adresse oder Sehenswürdigkeit" autocomplete="off">
+      <button type="button" class="btn" id="stopSearch">Suchen</button>
+    </div>
+    <div class="hits" id="stopResults" hidden></div>
+    <div class="picked" id="stopPlace" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+      <span></span>
+      <button type="button" class="picked-clear" id="stopPlaceClear" aria-label="Ort entfernen">×</button>
+    </div>
+    <label class="lbl" for="stopNote">Notiz</label>
+    <input class="field" id="stopNote" maxlength="120" placeholder="optional">
+    <p class="err" id="stopErr" hidden></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" data-close>Abbrechen</button>
+      <button type="submit" class="btn primary">Speichern</button>
+    </div>
+    <button type="button" class="linkish danger" id="stopDelete" hidden>Löschen</button>
+  </form>
+</dialog>
+
 <dialog id="dlgJoin">
   <form method="dialog" class="dlg" id="joinForm">
-    <h2>Trip beitreten</h2>
-    <label class="lbl" for="joinCode">Trip-Code eingeben</label>
-    <input class="field code-input" id="joinCode" maxlength="7" placeholder="ABC123" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
+    <h2>Reise beitreten</h2>
+    <label class="lbl" for="joinCode">Code eingeben</label>
+    <input class="field code-input" id="joinCode" maxlength="10" placeholder="ABCD1234" autocapitalize="characters" autocomplete="off" spellcheck="false" required>
     <p class="err" id="joinErr" hidden></p>
     <div class="dlg-actions">
       <button type="button" class="btn" data-close>Abbrechen</button>
@@ -192,12 +387,26 @@
 
 <dialog id="dlgCode">
   <div class="dlg">
-    <h2>Mitfahrer einladen</h2>
-    <p>Mit diesem Code kommen die anderen in dieselbe Liste — App öffnen, Namen eingeben, <em>Mit Code beitreten</em>.</p>
+    <h2>Mitreisende einladen</h2>
+    <p>Mit diesem Code kommen die anderen in dieselbe Reise — App öffnen, Namen eingeben, <em>Mit Code beitreten</em>.</p>
     <div class="code-big" id="codeBig">------</div>
     <div class="dlg-actions">
       <button type="button" class="btn" data-close>Schließen</button>
-      <button type="button" class="btn primary" id="copyCode">Link kopieren</button>
+      <button type="button" class="btn primary" id="copyCode">Einladung teilen</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="lightbox" class="lightbox">
+  <div class="lb-inner">
+    <button type="button" class="lb-close" id="lightboxClose" aria-label="Schließen">×</button>
+    <div class="lb-stage">
+      <div class="spinner" id="lightboxSpin" hidden></div>
+      <img id="lightboxImg" alt="" hidden>
+    </div>
+    <div class="lb-bar">
+      <span class="lb-meta" id="lightboxMeta"></span>
+      <button type="button" class="lb-del" id="lightboxDelete">Löschen</button>
     </div>
   </div>
 </dialog>

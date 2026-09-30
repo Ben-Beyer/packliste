@@ -1,8 +1,8 @@
-/* Roadtrip Packliste - Service Worker
+/* Reisebuddy - Service Worker
    Macht die App offline startbar. Nach jeder Aenderung an den Dateien VERSION
    hochzaehlen, sonst bleiben installierte Geraete auf der alten Fassung. */
 
-const VERSION = "packliste-v5";
+const VERSION = "reisebuddy-v6";
 const SHELL = VERSION + "-shell";
 const RUNTIME = VERSION + "-runtime";
 
@@ -13,6 +13,11 @@ const SHELL_FILES = [
   "./app.js",
   "./store.js",
   "./data.js",
+  "./exif.js",
+  "./photos.js",
+  "./plan.js",
+  "./packliste.js",
+  "./mapview.js",
   "./firebase-config.js",
   "./manifest.webmanifest",
   "./icons/icon-180.png",
@@ -21,13 +26,16 @@ const SHELL_FILES = [
   "./icons/favicon-32.png"
 ];
 
-/* Fremde Hosts, deren Dateien sich nicht aendern: Schriften und das Firebase-SDK.
+/* Fremde Hosts, deren Dateien sich nicht aendern: Schriften, das Firebase-SDK
+   und Leaflet fuer die Karte.
    Firestore selbst (firestore.googleapis.com) steht bewusst NICHT hier - die
-   Verbindung muss ungefiltert durchlaufen, sonst bricht die Live-Synchronisierung. */
+   Verbindung muss ungefiltert durchlaufen, sonst bricht die Synchronisierung.
+   Kartenkacheln ebenfalls nicht: die wuerden den Cache sprengen. */
 const THIRD_PARTY = [
   "https://fonts.googleapis.com",
   "https://fonts.gstatic.com",
-  "https://www.gstatic.com"
+  "https://www.gstatic.com",
+  "https://cdnjs.cloudflare.com"
 ];
 
 self.addEventListener("install", (event) => {
@@ -85,8 +93,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Eigene Dateien: erst Netz, bei Fehler aus dem Cache. So zieht ein iPhone
-  // Aenderungen an app.js/style.css sofort, funktioniert aber ohne Netz weiter.
+  // Eigene Dateien: erst Netz, bei Fehler aus dem Cache. So ziehen Geraete
+  // Aenderungen sofort, funktionieren aber ohne Netz weiter.
   if (url.origin === self.location.origin) {
     event.respondWith(
       fetch(req)
