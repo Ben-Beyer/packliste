@@ -2,7 +2,7 @@
    Macht die App offline startbar. Nach jeder Aenderung an den Dateien VERSION
    hochzaehlen, sonst bleiben installierte Geraete auf der alten Fassung. */
 
-const VERSION = "reisebuddy-v12";
+const VERSION = "reisebuddy-v13";
 const SHELL = VERSION + "-shell";
 const RUNTIME = VERSION + "-runtime";
 
@@ -68,9 +68,12 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
 
   // Seitenaufruf: erst Netz, damit Aenderungen ankommen, sonst aus dem Cache.
+  // `no-cache` heisst: beim Server nachfragen statt blind aus dem Browsercache
+  // zu nehmen. GitHub Pages erlaubt sonst 10 Minuten alte Dateien, und dann
+  // treffen neue und alte Bausteine aufeinander.
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-cache" })
         .then((res) => {
           const copy = res.clone();
           caches.open(SHELL).then((c) => c.put("./index.html", copy));
@@ -98,11 +101,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Eigene Dateien: erst Netz, bei Fehler aus dem Cache. So ziehen Geraete
-  // Aenderungen sofort, funktionieren aber ohne Netz weiter.
+  // Eigene Dateien: erst beim Server nachfragen, bei Fehler aus dem Cache. So
+  // ziehen Geraete Aenderungen sofort, funktionieren aber ohne Netz weiter.
   if (url.origin === self.location.origin) {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-cache" })
         .then((res) => {
           if (res && res.ok) {
             const copy = res.clone();
