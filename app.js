@@ -767,15 +767,24 @@ window.addEventListener("offline", () => { if (ctx.trip) renderTrip(); });
 
 /* ---------- Start ---------- */
 
+function schritt(name) {
+  window.__schritt = name;
+  try { document.documentElement.dataset.schritt = name; } catch (e) {}
+}
+
 (async function start() {
+  schritt("start");
   ctx.user = readUser();
 
+  schritt("motion");
   ctx.motion = await initMotion();
+  schritt("motion-fertig");
   ctx.stagger = (nodes, o) => ctx.motion.stagger(nodes, o);
   ctx.reveal = (el, o) => ctx.motion.reveal(el, o);
   ctx.openLightbox = (d, from) => ctx.motion.openLightbox(d, from);
   ctx.feiern = (el) => ctx.motion.feiern(el);
 
+  schritt("speicher");
   try {
     // Mit Frist: haengt die Anmeldung, soll die App das sagen statt ewig zu laden.
     ctx.store = await Promise.race([
@@ -790,6 +799,7 @@ window.addEventListener("offline", () => { if (ctx.trip) renderTrip(); });
     return;
   }
 
+  schritt("speicher-fertig");
   // Jeder Baustein einzeln, damit ein Fehler benannt werden kann statt die App
   // stumm im Ladebildschirm haengen zu lassen.
   try {
@@ -814,7 +824,8 @@ window.addEventListener("offline", () => { if (ctx.trip) renderTrip(); });
     modules.photos.show(p);
   };
 
-  ctx.motion.intro(() => route());
+  schritt("module-fertig");
+  ctx.motion.intro(() => { schritt("bereit"); route(); });
 
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});
