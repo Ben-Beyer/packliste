@@ -208,6 +208,25 @@ export async function createStore() {
     async deletePhoto(code, id) {
       await fs.deleteDoc(photoRef(code, id));
       await fs.deleteDoc(dataRef(code, id));
+    },
+
+    /* Reise endgueltig loeschen. Firestore raeumt Unterordner nicht mit ab,
+       die Fotos muessen also einzeln weg - in Stapeln, weil ein Stapel
+       hoechstens 500 Schritte fasst und pro Foto zwei anfallen. */
+    async deleteTrip(code, onProgress) {
+      const snap = await fs.getDocs(photosRef(code));
+      const ids = snap.docs.map((d) => d.id);
+      for (let i = 0; i < ids.length; i += 200) {
+        const batch = fs.writeBatch(db);
+        ids.slice(i, i + 200).forEach((id) => {
+          batch.delete(photoRef(code, id));
+          batch.delete(dataRef(code, id));
+        });
+        await batch.commit();
+        if (onProgress) onProgress(Math.min(i + 200, ids.length), ids.length);
+      }
+      await fs.deleteDoc(tripRef(code));
+      return ids.length;
     }
   };
 }

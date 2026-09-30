@@ -39,9 +39,14 @@ Oberfläche — nachgemessen mit einem angemeldeten Fremdzugriff:
 | Reisen auflisten | **verweigert** (`permission-denied`) |
 | Reise mit richtigem Code lesen | erlaubt |
 | Reise mit geratenem Code | existiert nicht |
-| Reise löschen | **verweigert** |
+| Reise löschen | erlaubt — aber nur mit Code (siehe unten) |
 | Fotos einer Reise ohne Code finden | unmöglich, dafür braucht es den Reisepfad |
 | Zugriff ohne Anmeldung | **verweigert** |
+
+Löschen darf jeder, der den Code hat. Das ist bewusst so: Wer mit dem Code
+ohnehin alle Haken zurücksetzen und alle Fotos einzeln löschen kann, soll die
+Reise auch am Stück wegräumen dürfen. In der App liegt der Knopf ganz unten in
+der Übersicht und braucht zwei Tipps.
 
 Der Code hat 8 Zeichen aus 32 (ohne 0/O/1/I), also gut 1 Billion Möglichkeiten.
 Durchprobieren scheitert an den Kontingenten des Gratis-Tarifs, lange bevor es
@@ -107,8 +112,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /trips/{tripId} {
-      allow get, create, update: if request.auth != null;
-      allow list, delete: if false;
+      allow get, create, update, delete: if request.auth != null;
+      allow list: if false;
       match /photos/{photoId} {
         allow read, write: if request.auth != null;
       }
@@ -134,7 +139,7 @@ Die Startvorlage für neue Reisen steht in `data.js` als `TEMPLATE`:
 Das ändert nur **neue** Reisen; bestehende bearbeitet man in der App.
 
 Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen**
-(`reisebuddy-v7` → `v8`), sonst bleiben installierte Geräte auf der alten Fassung.
+(`reisebuddy-v8` → `v9`), sonst bleiben installierte Geräte auf der alten Fassung.
 
 Fallstrick: Positions-IDs sind Slugs `<bereich>__<position>` ohne Punkt und
 Schrägstrich, weil sie als Firestore-Feldpfad `checks.<id>.<person>` dienen.

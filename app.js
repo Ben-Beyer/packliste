@@ -561,6 +561,39 @@ $("copyCodeBtn").addEventListener("click", async () => {
   catch (e) { toast("Kopieren ging nicht — Code: " + ctx.code); }
 });
 
+let killArmed = false, killTimer = null;
+$("deleteTripBtn").addEventListener("click", async () => {
+  const btn = $("deleteTripBtn");
+  if (!killArmed) {
+    killArmed = true;
+    btn.textContent = "Wirklich — für alle löschen, endgültig";
+    killTimer = setTimeout(() => {
+      killArmed = false;
+      btn.textContent = "Reise endgültig löschen";
+    }, 6000);
+    return;
+  }
+  clearTimeout(killTimer);
+  killArmed = false;
+  btn.textContent = "Lösche …";
+  btn.disabled = true;
+  const code = ctx.code;
+  const name = (ctx.trip && ctx.trip.name) || "Die Reise";
+  try {
+    const photos = await ctx.store.deleteTrip(code, (done, total) => {
+      btn.textContent = `Lösche Fotos … ${done}/${total}`;
+    });
+    forgetTrip(code);
+    toast(`„${name}" ist gelöscht${photos ? ` — samt ${photos} Fotos` : ""}.`);
+    location.hash = "#/trips";
+  } catch (err) {
+    toast("Löschen hat nicht geklappt: " + (err && err.code || err));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Reise endgültig löschen";
+  }
+});
+
 $("leaveBtn").addEventListener("click", () => {
   forgetTrip(ctx.code);
   toast("Aus deiner Liste entfernt. Mit dem Code kommst du wieder rein.");
