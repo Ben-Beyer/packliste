@@ -2,7 +2,7 @@
    Macht die App offline startbar. Nach jeder Aenderung an den Dateien VERSION
    hochzaehlen, sonst bleiben installierte Geraete auf der alten Fassung. */
 
-const VERSION = "reisebuddy-v9";
+const VERSION = "reisebuddy-v11";
 const SHELL = VERSION + "-shell";
 const RUNTIME = VERSION + "-runtime";
 
@@ -17,7 +17,11 @@ const SHELL_FILES = [
   "./photos.js",
   "./plan.js",
   "./packliste.js",
+  "./spots.js",
   "./mapview.js",
+  "./motion.js",
+  "./weather.js",
+  "./tripplaner.js",
   "./firebase-config.js",
   "./manifest.webmanifest",
   "./icons/icon-180.png",
@@ -26,16 +30,17 @@ const SHELL_FILES = [
   "./icons/favicon-32.png"
 ];
 
-/* Fremde Hosts, deren Dateien sich nicht aendern: Schriften, das Firebase-SDK
-   und Leaflet fuer die Karte.
+/* Fremde Hosts, deren Dateien sich nicht aendern: Schriften, das Firebase-SDK,
+   Leaflet und GSAP.
    Firestore selbst (firestore.googleapis.com) steht bewusst NICHT hier - die
    Verbindung muss ungefiltert durchlaufen, sonst bricht die Synchronisierung.
-   Kartenkacheln ebenfalls nicht: die wuerden den Cache sprengen. */
+   Kartenkacheln und Open-Meteo ebenfalls nicht. */
 const THIRD_PARTY = [
   "https://fonts.googleapis.com",
   "https://fonts.gstatic.com",
   "https://www.gstatic.com",
-  "https://cdnjs.cloudflare.com"
+  "https://cdnjs.cloudflare.com",
+  "https://cdn.jsdelivr.net"
 ];
 
 self.addEventListener("install", (event) => {

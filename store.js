@@ -111,7 +111,7 @@ export async function createStore() {
   const dataRef = (code, id) => fs.doc(db, "trips", code, "photoData", id);
 
   const clean = (snap) => (snap.exists()
-    ? { code: snap.id, checks: {}, members: {}, stops: [], sections: [], ...snap.data() }
+    ? { code: snap.id, checks: {}, members: {}, stops: [], sections: [], challenges: {}, ...snap.data() }
     : null);
 
   return {
@@ -131,6 +131,7 @@ export async function createStore() {
           sections,
           stops: [],
           checks: {},
+          challenges: {},
           members: { [memberKey(by)]: { name: by, at: Date.now() } },
           createdAt: Date.now(),
           createdBy: by
@@ -192,6 +193,29 @@ export async function createStore() {
       return ref.id;
     },
 
+    /* Ort von Hand setzen - fuer Bilder, denen der Messenger die Ortsangabe
+       ausgetrieben hat. `place` = {lat, lon, placeName} oder null zum Loeschen. */
+    async placePhoto(code, id, place, by) {
+      if (place) {
+        await fs.updateDoc(photoRef(code, id), {
+          lat: place.lat, lon: place.lon,
+          placeName: place.placeName || "",
+          placedBy: by || "", placedAt: Date.now()
+        });
+      } else {
+        await fs.updateDoc(photoRef(code, id), {
+          lat: fs.deleteField(), lon: fs.deleteField(),
+          placeName: fs.deleteField(), placedBy: fs.deleteField(), placedAt: fs.deleteField()
+        });
+      }
+    },
+
+    /* Titelbild der Reise - wird beim ersten Foto gesetzt, damit die
+       Reiseliste etwas zu zeigen hat. */
+    async setCover(code, thumb) {
+      await fs.updateDoc(tripRef(code), { cover: fs.Bytes.fromUint8Array(thumb) });
+    },
+
     watchPhotos(code, cb) {
       const q = fs.query(photosRef(code), fs.orderBy("at", "asc"));
       return fs.onSnapshot(q,
@@ -203,6 +227,34 @@ export async function createStore() {
       const snap = await fs.getDoc(dataRef(code, id));
       const raw = snap.exists() ? snap.data().data : null;
       return raw ? raw.toUint8Array() : null;
+    },
+
+    /* ---- Spots: schoene Orte, zu denen man sich gegenseitig herausfordert ----
+
+       Die Spots liegen als Feld `challenges` im Reise-Dokument, nicht in einem
+       eigenen Unterordner. Das spart eine zusaetzliche Firestore-Regel, und weil
+       jeder Zugriff ein Punktpfad ist, ueberschreiben sich zwei Leute trotzdem
+       nicht. Ein Spot ist ein paar hundert Byte gross - selbst hundert davon
+       bleiben weit unter dem Dokumentlimit. */
+
+    async addSpot(code, spot) {
+      const id = "c" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+      await fs.updateDoc(tripRef(code), {
+        ["challenges." + id]: { ...spot, at: Date.now(), dares: {}, done: {} }
+      });
+      return id;
+    },
+
+    async deleteSpot(code, id) {
+      await fs.updateDoc(tripRef(code), { ["challenges." + id]: fs.deleteField() });
+    },
+
+    /* Einen Eintrag in `dares` (herausgefordert) oder `done` (war da) setzen
+       oder wegnehmen - als Punktpfad bis auf die Person hinunter. */
+    async setSpotMark(code, id, feld, mkey, wert) {
+      await fs.updateDoc(tripRef(code), {
+        [`challenges.${id}.${feld}.${mkey}`]: wert ? { ...wert, at: Date.now() } : fs.deleteField()
+      });
     },
 
     async deletePhoto(code, id) {

@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Reisebuddy</title>
-<meta name="description" content="Reisen planen, gemeinsam packen, Fotos sammeln und die gefahrene Route auf der Karte sehen.">
+<meta name="description" content="Reisen planen, gemeinsam packen, Fotos sammeln, Spots erobern — und die gefahrene Route auf der Karte sehen.">
 
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 <meta name="theme-color" content="#EFF1ED" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111614" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0E1311" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -18,19 +18,31 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- ============ Vorhang ============ -->
+<div class="loader" id="loader">
+  <div class="loader__inner">
+    <span class="loader__mark" id="loaderMark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18c3-6 6-9 9-9s5 2 7-1"/><circle cx="4" cy="18" r="1.8" fill="currentColor" stroke="none"/><path d="M20 4.5a2.6 2.6 0 0 0-2.6 2.6c0 1.9 2.6 4.4 2.6 4.4s2.6-2.5 2.6-4.4A2.6 2.6 0 0 0 20 4.5z" transform="translate(-4 -1)"/></svg>
+    </span>
+    <span class="loader__word" id="loaderWord" aria-label="Reisebuddy"><span>R</span><span>e</span><span>i</span><span>s</span><span>e</span><span>b</span><span>u</span><span>d</span><span>d</span><span>y</span></span>
+    <span class="loader__line" id="loaderLine" aria-hidden="true"></span>
+  </div>
+</div>
+
 <!-- ============ Start: Name festlegen ============ -->
 <section class="screen gate" id="screenName" hidden>
+  <div class="gate-glow" aria-hidden="true"></div>
   <div class="gate-card">
     <span class="gate-mark" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l6-3 6 3 6-3V3l-6 3-6-3-6 3z"/><path d="M9 3v12M15 6v12"/></svg>
     </span>
     <h1 id="gateTitle">Wie sollen dich die anderen nennen?</h1>
-    <p id="gateText">Dein Name steht an jedem Haken und an jedem Foto — so sieht jeder in der Reise, wer was gemacht hat.</p>
+    <p id="gateText">Dein Name steht an jedem Haken, an jedem Foto und an jedem Spot — so sieht jeder in der Reise, wer was gemacht hat.</p>
     <form id="nameForm" autocomplete="off">
       <input class="field" id="nameInput" type="text" maxlength="24" placeholder="z. B. Ben" aria-label="Dein Name" required>
       <button type="submit" class="btn primary block" id="nameSubmit">Los geht's</button>
@@ -51,14 +63,14 @@
   </div>
 </section>
 
-<!-- ============ Reise-Übersicht ============ -->
+<!-- ============ Reiseliste ============ -->
 <section class="screen" id="screenTrips" hidden>
   <header class="topbar">
     <div class="wrap">
       <div class="bar-row">
         <div class="bar-title">
           <div class="eyebrow">Reisebuddy</div>
-          <h1>Deine Reisen</h1>
+          <h1 id="tripsHeadline">Deine Reisen</h1>
         </div>
         <button type="button" class="who" id="whoBtn" title="Namen ändern">
           <span class="avatar" id="whoAvatar" aria-hidden="true"></span>
@@ -71,7 +83,10 @@
   <main class="wrap">
     <div class="trip-list" id="tripList"></div>
 
-    <div class="empty" id="tripsEmpty" hidden>
+    <div class="empty big" id="tripsEmpty" hidden>
+      <span class="empty-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+      </span>
       <p><strong>Noch keine Reise.</strong></p>
       <p>Leg eine an — du bekommst einen Code, den du an die Mitreisenden weitergibst. Wer den Code hat, plant, packt und sammelt Fotos mit. Alle anderen sehen nichts davon.</p>
     </div>
@@ -87,7 +102,8 @@
 
 <!-- ============ Eine Reise ============ -->
 <section class="screen" id="screenTrip" hidden>
-  <header class="topbar">
+  <header class="topbar trip-bar" id="tripBar">
+    <div class="trip-cover" id="tripCover" aria-hidden="true"></div>
     <div class="wrap">
       <div class="bar-row">
         <button type="button" class="icon-btn" id="backBtn" aria-label="Zurück zu den Reisen">
@@ -105,7 +121,7 @@
     </div>
   </header>
 
-  <!-- ---- Reiter: Übersicht ---- -->
+  <!-- ---- Übersicht ---- -->
   <main class="wrap panel" id="panelOverview" hidden>
     <div class="hero-card">
       <div class="hero-when" id="tripWhen">Kein Zeitraum eingetragen</div>
@@ -116,25 +132,31 @@
     <div class="tiles">
       <button type="button" class="tile" data-goto="pack">
         <span class="tile-label">Packliste</span>
-        <span class="tile-value" id="tilePack">0/0</span>
+        <span class="tile-value"><b id="tilePackDone">0</b><small>/<span id="tilePackAll">0</span></small></span>
         <span class="tile-note" id="tilePackNote">für dich erledigt</span>
       </button>
       <button type="button" class="tile" data-goto="plan">
         <span class="tile-label">Stationen</span>
-        <span class="tile-value" id="tileStops">0</span>
+        <span class="tile-value"><b id="tileStops">0</b></span>
         <span class="tile-note" id="tileStopsNote">geplant</span>
       </button>
       <button type="button" class="tile" data-goto="photos">
         <span class="tile-label">Fotos</span>
-        <span class="tile-value" id="tilePhotos">0</span>
+        <span class="tile-value"><b id="tilePhotos">0</b></span>
         <span class="tile-note" id="tilePhotosNote">hochgeladen</span>
       </button>
-      <button type="button" class="tile" data-goto="map">
-        <span class="tile-label">Strecke</span>
-        <span class="tile-value" id="tileKm">0</span>
-        <span class="tile-note">km zwischen Fotos</span>
+      <button type="button" class="tile" data-goto="spots">
+        <span class="tile-label">Spots</span>
+        <span class="tile-value"><b id="tileSpots">0</b></span>
+        <span class="tile-note" id="tileSpotsNote">zu erobern</span>
       </button>
     </div>
+
+    <section class="card" id="weatherCard" hidden>
+      <h2 class="card-title">Wetter <span id="weatherWo"></span></h2>
+      <div class="wetter" id="weatherRow"></div>
+      <p class="hint" id="weatherNote"></p>
+    </section>
 
     <section class="card">
       <h2 class="card-title">Wer ist dabei</h2>
@@ -154,11 +176,11 @@
     <div class="danger-zone">
       <button type="button" class="linkish" id="leaveBtn">Reise aus meiner Liste entfernen</button>
       <button type="button" class="linkish danger" id="deleteTripBtn">Reise endgültig löschen</button>
-      <p class="hint" id="deleteHint">„Entfernen" nimmt die Reise nur von diesem Gerät — mit dem Code kommst du wieder rein. „Endgültig löschen" wirft sie samt Packliste, Stationen und allen Fotos für alle Mitreisenden weg.</p>
+      <p class="hint" id="deleteHint">„Entfernen" nimmt die Reise nur von diesem Gerät — mit dem Code kommst du wieder rein. „Endgültig löschen" wirft sie samt Packliste, Stationen, Spots und allen Fotos für alle Mitreisenden weg.</p>
     </div>
   </main>
 
-  <!-- ---- Reiter: Packliste ---- -->
+  <!-- ---- Packliste ---- -->
   <main class="wrap panel" id="panelPack" hidden>
     <div class="headline">
       <div class="tally"><b id="tallyDone">0</b>/<span id="tallyTotal">0</span> gepackt</div>
@@ -200,7 +222,7 @@
     </div>
   </main>
 
-  <!-- ---- Reiter: Plan ---- -->
+  <!-- ---- Plan ---- -->
   <main class="wrap panel" id="panelPlan" hidden>
     <div class="panel-head">
       <h2 class="panel-title">Stationen</h2>
@@ -214,16 +236,27 @@
       <p>Trag ein, wo ihr hinwollt — mit Datum und Ort. Stationen mit Ort erscheinen als geplante Route auf der Karte.</p>
     </div>
 
+    <button type="button" class="planer-btn" id="planerBtn">
+      <span class="planer-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+      </span>
+      <span class="planer-text">
+        <strong>TripPlaner</strong>
+        <small>Geplante Orte übernehmen oder Stationen hinüberschieben</small>
+      </span>
+      <svg class="planer-pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+
     <p class="hint">Die Ortssuche kommt von OpenStreetMap und ist kostenlos. Ohne Ort lässt sich eine Station trotzdem speichern, sie taucht dann nur nicht auf der Karte auf.</p>
   </main>
 
-  <!-- ---- Reiter: Fotos ---- -->
+  <!-- ---- Fotos ---- -->
   <main class="wrap panel" id="panelPhotos" hidden>
     <div class="panel-head">
-      <h2 class="panel-title">Fotos</h2>
+      <h2 class="panel-title" id="photoTitle">Fotos</h2>
       <button type="button" class="btn primary" id="photoAddBtn">+ Hochladen</button>
     </div>
-    <input type="file" id="photoInput" accept="image/*" multiple hidden>
+    <input type="file" id="photoInput" accept="image/*,.heic,.heif" multiple hidden>
 
     <div class="progress" id="photoProgress" hidden>
       <div class="progress-text" id="photoProgressText">Wird hochgeladen …</div>
@@ -232,19 +265,56 @@
 
     <p class="hint" id="photoStats"></p>
 
-    <div class="grid" id="photoGrid"></div>
+    <div id="albumView">
+      <div class="albums" id="albumGrid"></div>
+    </div>
+
+    <div id="gridView" hidden>
+      <button type="button" class="backlink" id="photoBack">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        Alle Ordner
+      </button>
+      <div class="grid-actions" id="gridActions" hidden>
+        <button type="button" class="btn" id="placeAllBtn">Alle auf einen Ort setzen</button>
+      </div>
+      <div class="grid" id="photoGrid"></div>
+    </div>
 
     <div class="empty" id="photoEmpty" hidden>
       <p><strong>Noch keine Fotos.</strong></p>
-      <p>Lade Bilder von der Reise hoch. Steht im Foto ein Aufnahmeort, setzt die Karte daraus eure Route zusammen. Die Bilder werden vor dem Hochladen verkleinert.</p>
+      <p>Lade Bilder von der Reise hoch. Steht im Foto ein Aufnahmeort, setzt die Karte daraus eure Route zusammen — sonst trägst du ihn mit zwei Tipps nach.</p>
     </div>
   </main>
 
-  <!-- ---- Reiter: Karte ---- -->
+  <!-- ---- Spots / Challenge ---- -->
+  <main class="wrap panel" id="panelSpots" hidden>
+    <div class="panel-head">
+      <h2 class="panel-title">Spots</h2>
+      <button type="button" class="btn primary" id="spotAddBtn">+ Spot</button>
+    </div>
+
+    <div class="board" id="spotBoard" hidden></div>
+    <div class="spot-list" id="spotList"></div>
+
+    <div class="empty" id="spotsEmpty" hidden>
+      <span class="empty-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+      </span>
+      <p><strong>Noch kein Spot.</strong></p>
+      <p>Einen richtig schönen Fleck gefunden? Mach ihn zur Challenge und fordere die anderen heraus, auch hinzugehen. Wer da war, hakt ihn ab — oben steht, wer vorn liegt.</p>
+    </div>
+  </main>
+
+  <!-- ---- Karte ---- -->
   <main class="panel panel-map" id="panelMap" hidden>
     <div class="map-head wrap">
       <span class="map-stats" id="mapStats"></span>
       <button type="button" class="btn" id="mapFit">Alles zeigen</button>
+    </div>
+    <div class="map-ebenen wrap">
+      <button type="button" class="chip" data-ebene="fotos" aria-pressed="true">Fotos</button>
+      <button type="button" class="chip" data-ebene="plan" aria-pressed="true">Plan</button>
+      <button type="button" class="chip" data-ebene="spots" aria-pressed="true">Spots</button>
     </div>
     <div class="map-canvas" id="mapCanvas"></div>
     <p class="hint wrap" id="mapNote" hidden></p>
@@ -252,13 +322,14 @@
 
   <!-- ---- Reiterleiste ---- -->
   <nav class="tabbar" id="tabbar" aria-label="Bereiche der Reise">
-    <button type="button" class="tab" data-tab="overview" aria-current="true">
+    <span class="tab-marker" id="tabMarker" aria-hidden="true"></span>
+    <button type="button" class="tab on" data-tab="overview" aria-current="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 21v-7h6v7"/></svg>
       <span>Übersicht</span>
     </button>
     <button type="button" class="tab" data-tab="pack">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
-      <span>Packliste</span>
+      <span>Packen</span>
     </button>
     <button type="button" class="tab" data-tab="plan">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
@@ -267,6 +338,10 @@
     <button type="button" class="tab" data-tab="photos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6l1.5-2h5L16 6"/><circle cx="12" cy="13" r="3.2"/></svg>
       <span>Fotos</span>
+    </button>
+    <button type="button" class="tab" data-tab="spots">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+      <span>Spots</span>
     </button>
     <button type="button" class="tab" data-tab="map">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
@@ -376,6 +451,90 @@
   </form>
 </dialog>
 
+<dialog id="dlgSpot">
+  <form method="dialog" class="dlg" id="spotForm">
+    <h2>Neuer Spot</h2>
+    <p>Ein Ort, den die anderen unbedingt sehen sollen.</p>
+    <label class="lbl" for="spotTitle">Wie heißt der Fleck?</label>
+    <input class="field" id="spotTitle" maxlength="60" placeholder="z. B. Aussicht über die Bucht" required>
+
+    <label class="lbl" for="spotQuery2">Wo ist das?</label>
+    <div class="search-row">
+      <input class="field" id="spotQuery2" maxlength="80" placeholder="Ort oder Adresse" autocomplete="off">
+      <button type="button" class="btn" id="spotSearch2">Suchen</button>
+    </div>
+    <div class="hits" id="spotResults2" hidden></div>
+    <button type="button" class="btn ghost block" id="spotFromPhoto">… oder aus einem Foto übernehmen</button>
+    <div class="picker" id="spotPhotoPicker" hidden></div>
+    <div class="picked" id="spotPlace2" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+      <span></span>
+      <button type="button" class="picked-clear" id="spotPlaceClear2" aria-label="Ort entfernen">×</button>
+    </div>
+
+    <label class="lbl" for="spotNote2">Warum lohnt es sich?</label>
+    <input class="field" id="spotNote2" maxlength="120" placeholder="optional">
+    <p class="err" id="spotErr2" hidden></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" data-close>Abbrechen</button>
+      <button type="submit" class="btn primary">Spot anlegen</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgPlace">
+  <div class="dlg">
+    <h2>Ort nachtragen</h2>
+    <p id="placeCount">Für dieses Foto</p>
+    <label class="lbl" for="placeQuery">Ort suchen</label>
+    <div class="search-row">
+      <input class="field" id="placeQuery" maxlength="80" placeholder="Ort, Adresse oder Sehenswürdigkeit" autocomplete="off">
+      <button type="button" class="btn" id="placeSearch">Suchen</button>
+    </div>
+    <div class="hits" id="placeResults" hidden></div>
+    <div class="from-stops">
+      <span class="lbl">… oder eine geplante Station nehmen</span>
+      <div class="hits" id="placeStops"></div>
+    </div>
+    <p class="err" id="placeErr" hidden></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" data-close>Abbrechen</button>
+      <button type="button" class="btn" id="placeClear" hidden>Ort entfernen</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgPlaner">
+  <div class="dlg">
+    <h2>TripPlaner</h2>
+    <p>Beide Richtungen: geplante Orte hierher holen, oder deine Stationen hinüberschieben.</p>
+
+    <h3 class="dlg-sub">Von dort nach hier</h3>
+    <label class="lbl" for="planerId">Sitzungs-ID (am Rechner, wenn der TripPlaner läuft)</label>
+    <div class="search-row">
+      <input class="field" id="planerId" placeholder="trip-…" autocomplete="off">
+      <button type="button" class="btn" id="planerFetch">Holen</button>
+    </div>
+    <label class="lbl" for="planerJson">… oder Daten einfügen (geht überall)</label>
+    <textarea class="field area" id="planerJson" rows="3" placeholder='[{"name":"Danzig","latitude":54.35,"longitude":18.65}]'></textarea>
+    <button type="button" class="btn block" id="planerImport">Als Stationen übernehmen</button>
+
+    <h3 class="dlg-sub">Von hier nach dort</h3>
+    <textarea class="field area" id="planerExport" rows="3" readonly></textarea>
+    <div class="dlg-actions">
+      <button type="button" class="btn" id="planerCopy">Kopieren</button>
+      <button type="button" class="btn" id="planerOpen">TripPlaner öffnen</button>
+    </div>
+
+    <p class="err" id="planerErr" hidden></p>
+    <p class="hint" id="planerInfo" hidden></p>
+    <p class="hint">Der direkte Weg braucht das TripPlaner-Backend auf <code>localhost:8080</code> und funktioniert nur am Rechner in Chrome oder Edge. Auf dem iPhone nimm das Einfügen-Feld.</p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" data-close>Schließen</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="dlgJoin">
   <form method="dialog" class="dlg" id="joinForm">
     <h2>Reise beitreten</h2>
@@ -411,6 +570,10 @@
     <div class="lb-bar">
       <span class="lb-meta" id="lightboxMeta"></span>
       <button type="button" class="lb-del" id="lightboxDelete">Löschen</button>
+    </div>
+    <div class="lb-ortzeile">
+      <span class="lb-place" id="lightboxPlace"></span>
+      <button type="button" class="lb-ortbtn" id="lightboxPlaceBtn">Ort setzen</button>
     </div>
   </div>
 </dialog>

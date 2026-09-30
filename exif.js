@@ -1,7 +1,15 @@
-/* Minimaler EXIF-Leser: Aufnahmeort und Aufnahmezeit aus einem JPEG.
+/* Aufnahmeort und -zeit aus einer Bilddatei lesen.
+
+   Gelesen werden JPEG (EXIF in APP1), HEIC/HEIF (iPhone-Originale, EXIF steckt
+   dort als eigener Eintrag im meta-Kasten) und PNG (eXIf-Block, selten).
 
    Bewusst selbst geschrieben statt einer Fremdbibliothek - gebraucht werden nur
-   vier Felder, und so haengt die App an keinem weiteren CDN. */
+   vier Felder, und so haengt die App an keinem weiteren CDN.
+
+   Wichtig fuer die Fehlersuche: Sehr viele Bilder haben schlicht keine
+   Ortsangabe, weil Google Fotos, WhatsApp und Co. sie beim Ausliefern
+   entfernen. Deshalb gibt diese Datei immer einen `grund` zurueck, damit die
+   App sagen kann, WARUM ein Foto keinen Ort hat. */
 
 const TAG_EXIF_IFD = 0x8769;
 const TAG_GPS_IFD = 0x8825;
@@ -13,33 +21,238 @@ const GPS_LAT_REF = 1, GPS_LAT = 2, GPS_LON_REF = 3, GPS_LON = 4, GPS_ALT = 6;
 
 const TYPE_SIZE = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8 };
 
-/* Liest die EXIF-Daten aus dem Anfang einer JPEG-Datei.
-   Gibt { lat, lon, alt, takenAt, orientation } zurueck - Felder fehlen,
-   wenn sie nicht im Bild stehen. Bei allem anderen: null. */
-export function readExif(buffer) {
+const HEAD = 512 * 1024;   // so viel vom Dateianfang reicht fuer die Kopfdaten
+
+/* Warum hat ein Foto keinen Ort? Diese Gruende zeigt die App im Klartext an. */
+export const GRUND = {
+  OK: "ok",
+  KEIN_GPS: "kein-gps",        // Metadaten da, aber ohne Ortsangabe
+  KEINE_METADATEN: "keine",    // gar kein Metadaten-Block
+  FORMAT: "format",            // Dateiformat ohne Metadaten (z. B. PNG-Screenshot)
+  DEFEKT: "defekt"
+};
+
+export const GRUND_TEXT = {
+  [GRUND.KEIN_GPS]: "Die Datei hat Metadaten, aber keine Ortsangabe. Das passiert, wenn das Bild über Google Fotos, WhatsApp oder einen Messenger kam — die entfernen den Ort.",
+  [GRUND.KEINE_METADATEN]: "In der Datei stehen überhaupt keine Metadaten. Meist ein erneut gespeichertes oder heruntergeladenes Bild.",
+  [GRUND.FORMAT]: "Dieses Dateiformat trägt keine Ortsangabe (z. B. ein Bildschirmfoto).",
+  [GRUND.DEFEKT]: "Die Metadaten ließen sich nicht lesen."
+};
+
+/* ------------------------------------------------------------------ */
+
+export async function readPhotoMeta(file) {
   try {
-    const view = new DataView(buffer);
-    if (view.byteLength < 4 || view.getUint16(0) !== 0xFFD8) return null; // kein JPEG
+    const head = await slice(file, 0, Math.min(HEAD, file.size));
+    const view = new DataView(head);
 
-    let offset = 2;
-    while (offset + 4 <= view.byteLength) {
-      const marker = view.getUint16(offset);
-      if ((marker & 0xFF00) !== 0xFF00) break;      // aus dem Takt geraten
-      if (marker === 0xFFDA || marker === 0xFFD9) break; // ab hier kommen Bilddaten
-      const size = view.getUint16(offset + 2);
-      if (size < 2) break;
-
-      if (marker === 0xFFE1 && offset + 10 <= view.byteLength) {
-        // APP1 - hier steckt EXIF, erkennbar an der Kennung "Exif\0\0"
-        if (view.getUint32(offset + 4) === 0x45786966 && view.getUint16(offset + 8) === 0) {
-          return parseTiff(view, offset + 10);
-        }
-      }
-      offset += 2 + size;
+    if (isJpeg(view)) {
+      const at = jpegExifStart(view);
+      if (at < 0) return { grund: GRUND.KEINE_METADATEN };
+      return done(parseTiff(view, at));
     }
-  } catch (e) { /* kaputtes oder unbekanntes Format - dann eben ohne Ort */ }
+
+    if (isHeif(view)) {
+      const loc = heifExifExtent(view);
+      if (!loc) return { grund: GRUND.KEINE_METADATEN };
+      const buf = await slice(file, loc.offset, loc.offset + loc.length);
+      const v = new DataView(buf);
+      if (v.byteLength < 12) return { grund: GRUND.KEINE_METADATEN };
+      // Der Eintrag beginnt mit einem 4-Byte-Abstand bis zum TIFF-Kopf
+      let start = 4 + v.getUint32(0);
+      if (start + 8 <= v.byteLength && v.getUint32(start) === 0x45786966) start += 6;
+      if (start + 8 > v.byteLength) return { grund: GRUND.KEINE_METADATEN };
+      return done(parseTiff(v, start));
+    }
+
+    if (isPng(view)) {
+      const at = pngExifStart(view);
+      if (at < 0) return { grund: GRUND.FORMAT };
+      return done(parseTiff(view, at));
+    }
+
+    return { grund: GRUND.FORMAT };
+  } catch (e) {
+    return { grund: GRUND.DEFEKT };
+  }
+}
+
+function done(data) {
+  if (!data) return { grund: GRUND.KEINE_METADATEN };
+  if (typeof data.lat !== "number") return { ...data, grund: GRUND.KEIN_GPS };
+  return { ...data, grund: GRUND.OK };
+}
+
+function slice(file, from, to) {
+  return file.slice(from, to).arrayBuffer();
+}
+
+/* ---------------- JPEG ---------------- */
+
+const isJpeg = (v) => v.byteLength > 3 && v.getUint16(0) === 0xFFD8;
+
+function jpegExifStart(view) {
+  let offset = 2;
+  while (offset + 4 <= view.byteLength) {
+    const marker = view.getUint16(offset);
+    if ((marker & 0xFF00) !== 0xFF00) break;          // aus dem Takt geraten
+    if (marker === 0xFFDA || marker === 0xFFD9) break; // ab hier Bilddaten
+    const size = view.getUint16(offset + 2);
+    if (size < 2) break;
+    if (marker === 0xFFE1 && offset + 10 <= view.byteLength
+        && view.getUint32(offset + 4) === 0x45786966 && view.getUint16(offset + 8) === 0) {
+      return offset + 10;
+    }
+    offset += 2 + size;
+  }
+  return -1;
+}
+
+/* ---------------- PNG ---------------- */
+
+const isPng = (v) => v.byteLength > 8 && v.getUint32(0) === 0x89504E47;
+
+function pngExifStart(view) {
+  let p = 8;
+  while (p + 8 <= view.byteLength) {
+    const len = view.getUint32(p);
+    const type = fourcc(view, p + 4);
+    if (type === "eXIf") {
+      let start = p + 8;
+      if (start + 8 <= view.byteLength && view.getUint32(start) === 0x45786966) start += 6;
+      return start;
+    }
+    if (type === "IDAT" || type === "IEND") break;
+    p += 12 + len;   // Laenge + Typ + Daten + Pruefsumme
+  }
+  return -1;
+}
+
+/* ---------------- HEIC / HEIF ----------------
+   Der Aufbau ist eine Kiste voller Kisten. Gesucht wird der Eintrag vom Typ
+   "Exif": `iinf` sagt, welche Eintragsnummer er hat, `iloc` sagt, wo in der
+   Datei er liegt. */
+
+function isHeif(v) {
+  if (v.byteLength < 12) return false;
+  if (fourcc(v, 4) !== "ftyp") return false;
+  const brands = ["heic", "heix", "hevc", "heim", "heis", "hevm", "mif1", "msf1", "avif", "avis"];
+  if (brands.includes(fourcc(v, 8))) return true;
+  // sonst die Liste der kompatiblen Marken durchsehen
+  const size = v.getUint32(0);
+  for (let p = 16; p + 4 <= Math.min(size, v.byteLength); p += 4) {
+    if (brands.includes(fourcc(v, p))) return true;
+  }
+  return false;
+}
+
+function heifExifExtent(view) {
+  let meta = null;
+  walk(view, 0, view.byteLength, (type, from, to) => {
+    if (type === "meta") { meta = { from: from + 4, to }; return false; }  // FullBox: 4 Byte Version/Flags
+  });
+  if (!meta) return null;
+
+  let exifId = -1;
+  let extent = null;
+
+  walk(view, meta.from, meta.to, (type, from, to) => {
+    if (type === "iinf") exifId = findExifItemId(view, from, to);
+  });
+  if (exifId < 0) return null;
+
+  walk(view, meta.from, meta.to, (type, from, to) => {
+    if (type === "iloc") extent = findItemExtent(view, from, to, exifId);
+  });
+  return extent;
+}
+
+function walk(view, start, end, cb) {
+  let p = start;
+  while (p + 8 <= end) {
+    let size = view.getUint32(p);
+    const type = fourcc(view, p + 4);
+    let head = 8;
+    if (size === 1) {
+      if (p + 16 > end) break;
+      size = view.getUint32(p + 8) * 4294967296 + view.getUint32(p + 12);
+      head = 16;
+    } else if (size === 0) {
+      size = end - p;
+    }
+    if (size < head || p + size > end + 8) break;
+    if (cb(type, p + head, Math.min(p + size, end)) === false) return;
+    p += size;
+  }
+}
+
+function findExifItemId(view, from, to) {
+  const version = view.getUint8(from);
+  let p = from + 4;
+  let count;
+  if (version === 0) { count = view.getUint16(p); p += 2; }
+  else { count = view.getUint32(p); p += 4; }
+
+  let found = -1;
+  walk(view, p, to, (type, f) => {
+    if (type !== "infe") return;
+    const v = view.getUint8(f);
+    let q = f + 4;
+    let id;
+    if (v < 3) { id = view.getUint16(q); q += 2; }
+    else { id = view.getUint32(q); q += 4; }
+    q += 2;                       // protection_index
+    if (v >= 2 && fourcc(view, q) === "Exif") { found = id; return false; }
+  });
+  return found;
+}
+
+function findItemExtent(view, from, to, wantedId) {
+  const version = view.getUint8(from);
+  let p = from + 4;
+
+  const b1 = view.getUint8(p++), b2 = view.getUint8(p++);
+  const offsetSize = b1 >> 4, lengthSize = b1 & 15;
+  const baseSize = b2 >> 4, indexSize = version >= 1 ? (b2 & 15) : 0;
+
+  let count;
+  if (version < 2) { count = view.getUint16(p); p += 2; }
+  else { count = view.getUint32(p); p += 4; }
+
+  for (let i = 0; i < count && p < to; i++) {
+    let id;
+    if (version < 2) { id = view.getUint16(p); p += 2; }
+    else { id = view.getUint32(p); p += 4; }
+    if (version === 1 || version === 2) p += 2;   // construction_method
+    p += 2;                                       // data_reference_index
+    const base = readInt(view, p, baseSize); p += baseSize;
+    const extents = view.getUint16(p); p += 2;
+
+    for (let e = 0; e < extents; e++) {
+      if (indexSize) p += indexSize;
+      const off = readInt(view, p, offsetSize); p += offsetSize;
+      const len = readInt(view, p, lengthSize); p += lengthSize;
+      if (id === wantedId && e === 0) return { offset: base + off, length: len };
+    }
+  }
   return null;
 }
+
+function readInt(view, p, size) {
+  if (size === 0) return 0;
+  if (size === 4) return view.getUint32(p);
+  if (size === 8) return view.getUint32(p) * 4294967296 + view.getUint32(p + 4);
+  if (size === 2) return view.getUint16(p);
+  if (size === 1) return view.getUint8(p);
+  return 0;
+}
+
+function fourcc(view, p) {
+  if (p + 4 > view.byteLength) return "";
+  return String.fromCharCode(view.getUint8(p), view.getUint8(p + 1), view.getUint8(p + 2), view.getUint8(p + 3));
+}
+
+/* ---------------- TIFF / EXIF ---------------- */
 
 function parseTiff(view, tiff) {
   if (tiff + 8 > view.byteLength) return null;
@@ -80,16 +293,16 @@ function parseTiff(view, tiff) {
         out.lat = lat;
         out.lon = lon;
         const alt = value(view, tiff, gps.get(GPS_ALT), little);
-        if (Array.isArray(alt) === false && typeof alt === "number") out.alt = Math.round(alt);
+        if (typeof alt === "number") out.alt = Math.round(alt);
       }
     }
   }
 
-  return Object.keys(out).length ? out : null;
+  return out;
 }
 
 function readIfd(view, tiff, dir, little) {
-  if (dir + 2 > view.byteLength) return null;
+  if (dir + 2 > view.byteLength || dir < tiff) return null;
   const count = view.getUint16(dir, little);
   if (dir + 2 + count * 12 > view.byteLength) return null;
   const tags = new Map();
@@ -104,8 +317,8 @@ function readIfd(view, tiff, dir, little) {
   return tags;
 }
 
-/* Liest den Wert eines Eintrags. Einzelwerte kommen als Zahl oder String zurueck,
-   mehrteilige als Array. */
+/* Liest den Wert eines Eintrags. Einzelwerte kommen als Zahl oder Text zurueck,
+   mehrteilige als Liste. */
 function value(view, tiff, tag, little) {
   if (!tag) return null;
   const unit = TYPE_SIZE[tag.type];
@@ -115,10 +328,10 @@ function value(view, tiff, tag, little) {
   let at = tag.entry + 8;
   if (bytes > 4) {
     at = tiff + view.getUint32(tag.entry + 8, little);
-    if (at + bytes > view.byteLength) return null;
+    if (at < 0 || at + bytes > view.byteLength) return null;
   }
 
-  if (tag.type === 2) { // ASCII
+  if (tag.type === 2) {
     let s = "";
     for (let i = 0; i < tag.count; i++) {
       const c = view.getUint8(at + i);

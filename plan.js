@@ -7,25 +7,26 @@
 import { formatDate } from "./mapview.js";
 
 const NOMINATIM = "https://nominatim.openstreetmap.org/search";
+const $ = (id) => document.getElementById(id);
 
 export function initPlan(ctx) {
-  const list = document.getElementById("stopList");
-  const empty = document.getElementById("stopEmpty");
-  const addBtn = document.getElementById("stopAddBtn");
+  const list = $("stopList");
+  const empty = $("stopEmpty");
+  const addBtn = $("stopAddBtn");
 
-  const dlg = document.getElementById("dlgStop");
-  const form = document.getElementById("stopForm");
-  const fName = document.getElementById("stopName");
-  const fDate = document.getElementById("stopDate");
-  const fNote = document.getElementById("stopNote");
-  const fQuery = document.getElementById("stopQuery");
-  const searchBtn = document.getElementById("stopSearch");
-  const results = document.getElementById("stopResults");
-  const placeLine = document.getElementById("stopPlace");
-  const clearPlace = document.getElementById("stopPlaceClear");
-  const delBtn = document.getElementById("stopDelete");
-  const title = document.getElementById("stopDlgTitle");
-  const err = document.getElementById("stopErr");
+  const dlg = $("dlgStop");
+  const form = $("stopForm");
+  const fName = $("stopName");
+  const fDate = $("stopDate");
+  const fNote = $("stopNote");
+  const fQuery = $("stopQuery");
+  const searchBtn = $("stopSearch");
+  const results = $("stopResults");
+  const placeLine = $("stopPlace");
+  const clearPlace = $("stopPlaceClear");
+  const delBtn = $("stopDelete");
+  const title = $("stopDlgTitle");
+  const err = $("stopErr");
 
   let editing = null;      // ID der Station, die gerade bearbeitet wird
   let picked = null;       // { lat, lon, place }
@@ -78,8 +79,8 @@ export function initPlan(ctx) {
     results.textContent = "";
     results.hidden = true;
     try {
-      const url = `${NOMINATIM}?format=jsonv2&limit=5&accept-language=de&q=${encodeURIComponent(q)}`;
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      const res = await fetch(`${NOMINATIM}?format=jsonv2&limit=5&accept-language=de&q=${encodeURIComponent(q)}`,
+        { headers: { Accept: "application/json" } });
       if (!res.ok) throw new Error("Suche nicht erreichbar");
       const hits = await res.json();
       if (!hits.length) {
@@ -215,6 +216,8 @@ export function initPlan(ctx) {
       row.addEventListener("click", () => openDialog(s));
       list.appendChild(row);
     });
+
+    ctx.stagger(list.children);
   }
 
   return { render };

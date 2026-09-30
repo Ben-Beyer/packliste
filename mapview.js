@@ -1,14 +1,17 @@
-/* Karte: wo wart ihr schon, und wo soll es noch hin.
+/* Karte: wo wart ihr schon, wo soll es hin, und welche Spots warten noch.
 
-   Die zurueckgelegte Route entsteht aus den Aufnahmeorten der Fotos, nach
-   Aufnahmezeit sortiert. Die geplante Route sind die Stationen aus dem Plan.
+   Drei Ebenen, einzeln abschaltbar:
+     Fotos  - die tatsaechlich gelaufene Route aus den Aufnahmeorten
+     Plan   - die geplanten Stationen, gestrichelt
+     Spots  - die Challenge-Orte
+
    Kartenbilder kommen von OpenStreetMap, dafuer braucht es keinen Schluessel. */
 
 const LEAFLET = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4";
+const $ = (id) => document.getElementById(id);
 
 let loading = null;
 
-/* Leaflet erst laden, wenn die Karte wirklich gebraucht wird. */
 function loadLeaflet() {
   if (window.L) return Promise.resolve(window.L);
   if (loading) return loading;
@@ -23,24 +26,35 @@ function loadLeaflet() {
     js.src = `${LEAFLET}/leaflet.min.js`;
     js.async = true;
     js.onload = () => resolve(window.L);
-    js.onerror = () => reject(new Error("Karte liess sich nicht laden"));
+    js.onerror = () => reject(new Error("Karte ließ sich nicht laden"));
     document.head.appendChild(js);
   });
   return loading;
 }
 
 export function initMap(ctx) {
-  const host = document.getElementById("mapCanvas");
-  const note = document.getElementById("mapNote");
-  const statLine = document.getElementById("mapStats");
-  const fitBtn = document.getElementById("mapFit");
+  const host = $("mapCanvas");
+  const note = $("mapNote");
+  const statLine = $("mapStats");
+  const fitBtn = $("mapFit");
 
   let map = null;
   let layers = null;
   let failed = false;
   const urls = new Map();
+  const an = { fotos: true, plan: true, spots: true };
 
   fitBtn.addEventListener("click", () => fit());
+
+  document.querySelectorAll("[data-ebene]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const k = b.dataset.ebene;
+      an[k] = !an[k];
+      b.setAttribute("aria-pressed", an[k] ? "true" : "false");
+      render();
+      requestAnimationFrame(fit);
+    });
+  });
 
   // Drehen des Geraets oder ein Fensterwechsel aendert die Containergroesse.
   // Kurz warten, sonst misst Leaflet die alte Breite.
@@ -59,7 +73,7 @@ export function initMap(ctx) {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       }).addTo(map);
-      map.setView([51.34, 12.37], 5);   // Startbild, bis Daten da sind
+      map.setView([51.34, 12.37], 5);
       layers = L.layerGroup().addTo(map);
     } catch (err) {
       failed = true;
@@ -71,7 +85,7 @@ export function initMap(ctx) {
 
   /* Wird aufgerufen, wenn der Reiter sichtbar wird. Vorher ist der Container
      ausgeblendet und hat keine Groesse - Leaflet muss also neu messen, und zwar
-     erst nachdem der Browser das Layout gerechnet hat. Deshalb das rAF. */
+     erst nachdem der Browser das Layout gerechnet hat. */
   async function activate() {
     await ensure();
     if (!map) return;
@@ -83,18 +97,24 @@ export function initMap(ctx) {
     });
   }
 
-  async function render() {
-    if (!map) return;   // erst wenn der Reiter mal offen war
+  function render() {
+    if (!map) return;
     const L = window.L;
     layers.clearLayers();
 
-    const photos = (ctx.photos || [])
-      .filter((p) => typeof p.lat === "number" && typeof p.lon === "number")
-      .slice()
-      .sort((a, b) => (a.at || 0) - (b.at || 0));
+    const fotos = an.fotos
+      ? (ctx.photos || [])
+          .filter((p) => typeof p.lat === "number" && typeof p.lon === "number")
+          .slice().sort((a, b) => (a.at || 0) - (b.at || 0))
+      : [];
 
-    const stops = ((ctx.trip && ctx.trip.stops) || [])
-      .filter((s) => typeof s.lat === "number" && typeof s.lon === "number");
+    const stops = an.plan
+      ? ((ctx.trip && ctx.trip.stops) || []).filter((s) => typeof s.lat === "number")
+      : [];
+
+    const spots = an.spots
+      ? (ctx.spots || []).filter((s) => typeof s.lat === "number")
+      : [];
 
     const bounds = [];
 
@@ -112,16 +132,28 @@ export function initMap(ctx) {
     });
 
     // Gelaufene Route aus den Fotos
-    if (photos.length > 1) {
-      L.polyline(photos.map((p) => [p.lat, p.lon]), {
-        color: "#0F6E4F", weight: 4, opacity: .85
+    let linie = null;
+    if (fotos.length > 1) {
+      linie = L.polyline(fotos.map((p) => [p.lat, p.lon]), {
+        color: "#0F6E4F", weight: 4, opacity: .9
       }).addTo(layers);
     }
-    photos.forEach((p) => {
+    fotos.forEach((p) => {
       bounds.push([p.lat, p.lon]);
       const marker = L.marker([p.lat, p.lon], { icon: photoIcon(L, p) }).addTo(layers);
       marker.on("click", () => ctx.openPhoto && ctx.openPhoto(p));
     });
+
+    // Challenge-Spots
+    spots.forEach((s) => {
+      bounds.push([s.lat, s.lon]);
+      const erledigt = Object.keys(s.done || {}).length > 0;
+      L.marker([s.lat, s.lon], { icon: spotIcon(L, erledigt) })
+        .bindPopup(`<strong>${escapeHtml(s.title)}</strong>${s.placeName ? "<br>" + escapeHtml(s.placeName) : ""}<br><em>Spot von ${escapeHtml(s.by || "jemand")}</em>`)
+        .addTo(layers);
+    });
+
+    if (linie) zeichneRoute(linie);
 
     if (bounds.length) {
       map.__bounds = L.latLngBounds(bounds);
@@ -129,14 +161,30 @@ export function initMap(ctx) {
     } else {
       map.__bounds = null;
       note.hidden = false;
-      note.textContent = "Noch nichts zu zeigen. Lade Fotos mit Ortsangabe hoch oder gib Stationen im Plan einen Ort.";
+      note.textContent = (ctx.photos || []).length
+        ? "Keins der Fotos hat eine Ortsangabe. Im Reiter Fotos kannst du sie im Ordner „Ohne Ort“ nachtragen — dann erscheint hier eure Route."
+        : "Noch nichts zu zeigen. Lade Fotos mit Ortsangabe hoch, plane Stationen oder leg einen Spot an.";
     }
 
-    const km = routeKm(photos);
-    const stopText = stops.length === 1 ? "1 geplante Station" : `${stops.length} geplante Stationen`;
-    statLine.textContent = photos.length
-      ? `${photos.length === 1 ? "1 Foto" : photos.length + " Fotos"} mit Ort · rund ${km} km Luftlinie zwischen den Aufnahmen${stops.length ? " · " + stopText : ""}`
-      : (stops.length ? stopText : "");
+    const km = routeKm(fotos);
+    const teile = [];
+    if (fotos.length) teile.push(`${fotos.length === 1 ? "1 Foto" : fotos.length + " Fotos"} mit Ort · rund ${km} km Luftlinie`);
+    if (stops.length) teile.push(stops.length === 1 ? "1 geplante Station" : `${stops.length} geplante Stationen`);
+    if (spots.length) teile.push(spots.length === 1 ? "1 Spot" : `${spots.length} Spots`);
+    statLine.textContent = teile.join(" · ");
+  }
+
+  /* Die Route zeichnet sich einmal von vorn nach hinten selbst. */
+  function zeichneRoute(linie) {
+    const el = linie.getElement && linie.getElement();
+    const g = ctx.motion && ctx.motion.gsap;
+    if (!el || !g || !ctx.motion.aktiv() || !el.getTotalLength) return;
+    const len = el.getTotalLength();
+    if (!len) return;
+    g.fromTo(el,
+      { strokeDasharray: len, strokeDashoffset: len },
+      { strokeDashoffset: 0, duration: 1.6, ease: "power2.inOut",
+        onComplete: () => { el.style.strokeDasharray = ""; el.style.strokeDashoffset = ""; } });
   }
 
   function fit() {
@@ -167,17 +215,26 @@ export function initMap(ctx) {
     });
   }
 
+  function spotIcon(L, erledigt) {
+    return L.divIcon({
+      className: "",
+      html: `<span class="map-spot${erledigt ? " hat" : ""}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg></span>`,
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
+  }
+
   return { render, activate };
 }
 
-/* Luftlinie zwischen aufeinanderfolgenden Aufnahmen, grob aufgerundet. */
+/* Luftlinie zwischen aufeinanderfolgenden Aufnahmen, grob gerundet. */
 function routeKm(points) {
   let sum = 0;
   for (let i = 1; i < points.length; i++) sum += haversine(points[i - 1], points[i]);
   return sum < 10 ? sum.toFixed(1) : Math.round(sum);
 }
 
-function haversine(a, b) {
+export function haversine(a, b) {
   const R = 6371;
   const toRad = (d) => d * Math.PI / 180;
   const dLat = toRad(b.lat - a.lat);
