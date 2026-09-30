@@ -584,7 +584,8 @@ $("deleteTripBtn").addEventListener("click", async () => {
       btn.textContent = `Lösche Fotos … ${done}/${total}`;
     });
     forgetTrip(code);
-    toast(`„${name}" ist gelöscht${photos ? ` — samt ${photos} Fotos` : ""}.`);
+    const mitFotos = photos ? ` — samt ${photos === 1 ? "einem Foto" : photos + " Fotos"}` : "";
+    toast(`„${name}“ ist gelöscht${mitFotos}.`);
     location.hash = "#/trips";
   } catch (err) {
     toast("Löschen hat nicht geklappt: " + (err && err.code || err));

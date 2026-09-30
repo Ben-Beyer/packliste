@@ -133,9 +133,10 @@ export function initMap(ctx) {
     }
 
     const km = routeKm(photos);
+    const stopText = stops.length === 1 ? "1 geplante Station" : `${stops.length} geplante Stationen`;
     statLine.textContent = photos.length
-      ? `${photos.length} Fotos mit Ort · rund ${km} km Luftlinie zwischen den Aufnahmen${stops.length ? ` · ${stops.length} geplante Stationen` : ""}`
-      : (stops.length ? `${stops.length} geplante Stationen` : "");
+      ? `${photos.length === 1 ? "1 Foto" : photos.length + " Fotos"} mit Ort · rund ${km} km Luftlinie zwischen den Aufnahmen${stops.length ? " · " + stopText : ""}`
+      : (stops.length ? stopText : "");
   }
 
   function fit() {

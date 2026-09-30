@@ -139,7 +139,7 @@ Die Startvorlage für neue Reisen steht in `data.js` als `TEMPLATE`:
 Das ändert nur **neue** Reisen; bestehende bearbeitet man in der App.
 
 Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen**
-(`reisebuddy-v8` → `v9`), sonst bleiben installierte Geräte auf der alten Fassung.
+(`reisebuddy-v9` → `v10`), sonst bleiben installierte Geräte auf der alten Fassung.
 
 Fallstrick: Positions-IDs sind Slugs `<bereich>__<position>` ohne Punkt und
 Schrägstrich, weil sie als Firestore-Feldpfad `checks.<id>.<person>` dienen.

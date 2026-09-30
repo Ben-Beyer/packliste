@@ -159,7 +159,7 @@ export function initPhotos(ctx) {
     const gb = bytes / (1024 * 1024 * 1024);
     const pct = Math.min(100, Math.round(gb * 100));
     stats.textContent = photos.length
-      ? `${photos.length} Fotos · ${located} mit Ort · ${formatSize(bytes)} von 1 GB belegt (${pct} %)`
+      ? `${photos.length === 1 ? "1 Foto" : photos.length + " Fotos"} · ${located} mit Ort · ${formatSize(bytes)} von 1 GB belegt (${pct} %)`
       : "";
     stats.classList.toggle("bad", pct >= 80);
   }
