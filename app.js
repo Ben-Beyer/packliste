@@ -777,7 +777,12 @@ window.addEventListener("offline", () => { if (ctx.trip) renderTrip(); });
   ctx.feiern = (el) => ctx.motion.feiern(el);
 
   try {
-    ctx.store = await createStore();
+    // Mit Frist: haengt die Anmeldung, soll die App das sagen statt ewig zu laden.
+    ctx.store = await Promise.race([
+      createStore(),
+      new Promise((_, ab) => setTimeout(
+        () => ab(new Error("Die Anmeldung hat zu lange gedauert.")), 20000))
+    ]);
   } catch (err) {
     $("errorText").textContent = String(err && err.message || err) +
       " Prüfe die Internetverbindung; wenn das bleibt, stimmt in der Firebase-Einrichtung etwas nicht.";

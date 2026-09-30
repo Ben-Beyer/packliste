@@ -18,13 +18,22 @@ let sparsam = false;
 
 const an = () => gsap && !sparsam;
 
-function script(src) {
+/* Ein Skript vom CDN holen - mit Frist. Ohne die Frist haengt die ganze App im
+   Ladebildschirm, sobald ein CDN langsam oder gesperrt ist (Firmennetz,
+   Werbeblocker, schlechtes Netz). Deko darf nie die App aufhalten. */
+function script(src, frist = 6000) {
   return new Promise((res, rej) => {
     const s = document.createElement("script");
+    let fertig = false;
+    const uhr = setTimeout(() => {
+      if (fertig) return;
+      fertig = true;
+      rej(new Error("Zeitüberschreitung: " + src));
+    }, frist);
     s.src = src;
     s.async = true;
-    s.onload = res;
-    s.onerror = () => rej(new Error(src));
+    s.onload = () => { if (fertig) return; fertig = true; clearTimeout(uhr); res(); };
+    s.onerror = () => { if (fertig) return; fertig = true; clearTimeout(uhr); rej(new Error(src)); };
     document.head.appendChild(s);
   });
 }
@@ -34,22 +43,23 @@ export async function initMotion() {
 
   try {
     await script(`${GSAP}/gsap.min.js`);
-    await Promise.all([
+    // Die Zusaetze sind Kuer - schlagen sie fehl, laeuft der Rest trotzdem.
+    await Promise.allSettled([
       script(`${GSAP}/ScrollTrigger.min.js`),
       script(`${GSAP}/Flip.min.js`)
     ]);
-    gsap = window.gsap;
-    ScrollTrigger = window.ScrollTrigger;
+    gsap = window.gsap || null;
+    ScrollTrigger = window.ScrollTrigger || null;
     if (gsap && ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
   } catch (e) {
-    gsap = null;   // ohne Animation weiter
+    gsap = window.gsap || null;   // notfalls ohne Animation weiter
   }
 
   // Sanftes Scrollen nur mit Maus/Trackpad. Auf dem Handy bleibt das native
   // Scrollen - alles andere fuehlt sich dort falsch an.
   if (gsap && !sparsam && !matchMedia("(pointer: coarse)").matches) {
     try {
-      await script(LENIS);
+      await script(LENIS, 4000);
       if (window.Lenis) {
         lenis = new window.Lenis({
           duration: 1.05,
