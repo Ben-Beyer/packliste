@@ -42,8 +42,13 @@ export function initMap(ctx) {
 
   fitBtn.addEventListener("click", () => fit());
 
-  // Drehen des Geraets oder ein Fensterwechsel aendert die Containergroesse
-  window.addEventListener("resize", () => { if (map) map.invalidateSize(); });
+  // Drehen des Geraets oder ein Fensterwechsel aendert die Containergroesse.
+  // Kurz warten, sonst misst Leaflet die alte Breite.
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (map) map.invalidateSize(); }, 180);
+  });
 
   async function ensure() {
     if (map || failed) return map;

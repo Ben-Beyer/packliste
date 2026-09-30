@@ -2,7 +2,7 @@
    Macht die App offline startbar. Nach jeder Aenderung an den Dateien VERSION
    hochzaehlen, sonst bleiben installierte Geraete auf der alten Fassung. */
 
-const VERSION = "reisebuddy-v6";
+const VERSION = "reisebuddy-v7";
 const SHELL = VERSION + "-shell";
 const RUNTIME = VERSION + "-runtime";
 
