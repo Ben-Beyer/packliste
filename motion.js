@@ -16,7 +16,11 @@ let ScrollTrigger = null;
 let lenis = null;
 let sparsam = false;
 
-const an = () => gsap && !sparsam;
+/* Animieren nur, wenn es auch laufen kann: GSAP geladen, der Nutzer will
+   Bewegung, und das Fenster ist sichtbar. Ist es verdeckt oder im Hintergrund,
+   steht requestAnimationFrame still - dann duerfen wir nichts auf "unsichtbar"
+   setzen, was danach nie wieder eingeblendet wird. */
+const an = () => gsap && !sparsam && !document.hidden;
 
 /* Ein Skript vom CDN holen - mit Frist. Ohne die Frist haengt die ganze App im
    Ladebildschirm, sobald ein CDN langsam oder gesperrt ist (Firmennetz,
@@ -107,7 +111,7 @@ function intro() {
 function stagger(nodes, opts = {}) {
   const els = [...(nodes || [])];
   if (!els.length) return;
-  if (!an()) { gsap && gsap.set(els, { clearProps: "all" }); return; }
+  if (!an()) { if (gsap) gsap.set(els, { clearProps: "all", opacity: 1 }); return; }
   gsap.killTweensOf(els);
   gsap.fromTo(els,
     { y: opts.y ?? 22, opacity: 0, scale: opts.scale ?? 1 },
@@ -204,13 +208,18 @@ function openLightbox(dialog, fromEl) {
 function count(el, bis, suffix = "") {
   if (!el) return;
   const ziel = Number(bis) || 0;
-  if (!an()) { el.textContent = ziel + suffix; return; }
   const von = Number(String(el.textContent).replace(/[^\d]/g, "")) || 0;
-  if (von === ziel) { el.textContent = ziel + suffix; return; }
+
+  // Erst den richtigen Wert hinschreiben, dann erst hochzaehlen lassen. So
+  // stimmt die Zahl auch, wenn die Animation gar nicht laeuft.
+  el.textContent = ziel + suffix;
+  if (!an() || von === ziel) return;
+
   const o = { v: von };
   gsap.to(o, {
     v: ziel, duration: .9, ease: "power3.out", overwrite: true,
-    onUpdate: () => { el.textContent = Math.round(o.v) + suffix; }
+    onUpdate: () => { el.textContent = Math.round(o.v) + suffix; },
+    onComplete: () => { el.textContent = ziel + suffix; }
   });
 }
 
