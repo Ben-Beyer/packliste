@@ -2,7 +2,7 @@
    Macht die App offline startbar. Nach jeder Aenderung an den Dateien VERSION
    hochzaehlen, sonst bleiben installierte Geraete auf der alten Fassung. */
 
-const VERSION = "reisebuddy-v16";
+const VERSION = "reisebuddy-v17";
 const SHELL = VERSION + "-shell";
 const RUNTIME = VERSION + "-runtime";
 
@@ -22,6 +22,8 @@ const SHELL_FILES = [
   "./motion.js",
   "./weather.js",
   "./tripplaner.js",
+  "./routing.js",
+  "./dashboard.js",
   "./firebase-config.js",
   "./manifest.webmanifest",
   "./icons/icon-180.png",

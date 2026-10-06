@@ -1,8 +1,14 @@
 /* Reisebuddy - Aufbau und Ablauf.
 
-   Drei Bildschirme: Name, Reiseliste, eine Reise. Die Reise selbst hat sechs
-   Reiter, die als eigene Module danebenliegen (packliste, plan, photos, spots,
-   mapview). Der Speicher steckt in store.js, die Animationen in motion.js. */
+   Startseite ist das Dashboard (dashboard.js) mit den zwei grossen Werkzeugen:
+   Packliste und TripPlaner. Die Packliste fuehrt ueber die Reiseliste in eine
+   Reise mit sechs Reitern (packliste, plan, photos, spots, mapview), der
+   TripPlaner (tripplaner.js) ist ein eigener Vollbild-Arbeitsplatz fuer
+   dieselbe Reise. Beide haengen an derselben Live-Verbindung zur Reise.
+   Der Speicher steckt in store.js, die Animationen in motion.js.
+
+   Adressen:  #/home  #/trips  #/trip/<code>  #/planer  #/planer/<code>
+              #/name  #/join/<code> */
 
 import { TEMPLATE, EMPTY_SECTIONS, buildSections } from "./data.js";
 import { createStore, myTrips, rememberTrip, forgetTrip, memberKey } from "./store.js";
@@ -12,6 +18,7 @@ import { initPhotos } from "./photos.js";
 import { initSpots } from "./spots.js";
 import { initMap, formatDate, haversine } from "./mapview.js";
 import { initTripPlaner } from "./tripplaner.js";
+import { initDashboard } from "./dashboard.js";
 import { initMotion } from "./motion.js";
 import { holeWetter, passendeTage, beschreibung, symbol } from "./weather.js";
 
@@ -35,7 +42,10 @@ const ctx = {
   stagger: () => {},
   reveal: () => {},
   openLightbox: (d) => d.showModal(),
-  feiern: () => {}
+  feiern: () => {},
+  packCount,
+  editStop: null,
+  editTrip: () => oeffneReiseDialog()
 };
 
 let pendingJoin = null;
@@ -45,6 +55,8 @@ let unsubTrip = null;
 let unsubPhotos = null;
 let announced = false;
 let coverUrl = null;
+let dash = null;
+let neuNach = "trip";   // wohin nach "Neue Reise": Packliste oder TripPlaner
 
 /* ---------- kleine Helfer ---------- */
 
@@ -103,7 +115,7 @@ function toast(msg) {
 }
 
 function showScreen(id) {
-  ["screenName", "screenTrips", "screenTrip", "screenError"].forEach((s) => {
+  ["screenName", "screenHome", "screenTrips", "screenPlanerList", "screenPlaner", "screenTrip", "screenError"].forEach((s) => {
     const el = $(s);
     const zeigen = s === id;
     if (zeigen && el.hidden && ctx.motion) ctx.motion.screenIn(el);
@@ -155,7 +167,7 @@ function openGate({ changing }) {
     gateCancel.type = "button";
     gateCancel.className = "linkish";
     gateCancel.textContent = "Abbrechen";
-    gateCancel.addEventListener("click", () => { location.hash = "#/trips"; });
+    gateCancel.addEventListener("click", () => { location.hash = "#/home"; });
     $("nameForm").after(gateCancel);
   }
   if (gateCancel) gateCancel.hidden = !changing;
@@ -182,11 +194,44 @@ $("nameForm").addEventListener("submit", async (e) => {
     await doJoin(code);
     return;
   }
-  location.hash = "#/trips";
+  location.hash = "#/home";
   route();
 });
 
 $("whoBtn").addEventListener("click", () => { location.hash = "#/name"; });
+
+/* ---------- Reisen laden ---------- */
+
+/* Alle Reisen dieses Geraets mit Inhalt - fuer Dashboard, Reiseliste und
+   die Auswahl im TripPlaner. Was nicht (mehr) da ist, kommt als trip: null. */
+async function ladeReisen() {
+  const codes = myTrips();
+  return Promise.all(codes.map(async (code) => {
+    try { return { code, trip: await ctx.store.getTrip(code) }; }
+    catch (e) { return { code, trip: null }; }
+  }));
+}
+
+/* Jeder Seitenwechsel zaehlt hoch. Kommt eine Ladeantwort erst an, wenn
+   schon weitergeklickt wurde, wird sie verworfen. */
+let navNr = 0;
+let homeGezeigt = false;
+async function renderHome() {
+  const nr = navNr;
+  showScreen("screenHome");
+  const liste = await ladeReisen();
+  if (nr !== navNr) return;
+  dash.renderHome(liste, { erstes: !homeGezeigt });
+  homeGezeigt = true;
+}
+
+async function renderPlanerList() {
+  const nr = navNr;
+  showScreen("screenPlanerList");
+  const liste = await ladeReisen();
+  if (nr !== navNr) return;
+  dash.renderChooser(liste);
+}
 
 /* ---------- Reiseliste ---------- */
 
@@ -203,10 +248,7 @@ async function renderTrips() {
   showScreen("screenTrips");
   if (ctx.motion) ctx.motion.zeilen($("tripsHeadline"));
 
-  const trips = await Promise.all(codes.map(async (code) => {
-    try { return { code, trip: await ctx.store.getTrip(code) }; }
-    catch (e) { return { code, trip: null }; }
-  }));
+  const trips = await ladeReisen();
 
   if (location.hash && location.hash !== "#/trips") return;   // inzwischen weitergeklickt
   list.textContent = "";
@@ -285,13 +327,18 @@ document.querySelectorAll("[data-close]").forEach((b) => {
   b.addEventListener("click", () => b.closest("dialog").close());
 });
 
-$("newTripBtn").addEventListener("click", () => {
+function neueReise(nach) {
+  neuNach = nach;
   $("newName").value = "";
   $("newStart").value = "";
   $("newEnd").value = "";
   $("newErr").hidden = true;
   $("dlgNew").showModal();
-});
+}
+
+$("newTripBtn").addEventListener("click", () => neueReise("trip"));
+$("homeNew").addEventListener("click", () => neueReise("trip"));
+$("planerNewTrip").addEventListener("click", () => neueReise("planer"));
 
 $("newForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -308,7 +355,7 @@ $("newForm").addEventListener("submit", async (e) => {
     });
     rememberTrip(code);
     $("dlgNew").close();
-    location.hash = "#/trip/" + code;
+    location.hash = (neuNach === "planer" ? "#/planer/" : "#/trip/") + code;
   } catch (err) {
     $("newErr").textContent = "Hat nicht geklappt: " + (err && err.message || err);
     $("newErr").hidden = false;
@@ -318,11 +365,13 @@ $("newForm").addEventListener("submit", async (e) => {
   }
 });
 
-$("joinTripBtn").addEventListener("click", () => {
+function beitreten() {
   $("joinCode").value = "";
   $("joinErr").hidden = true;
   $("dlgJoin").showModal();
-});
+}
+$("joinTripBtn").addEventListener("click", beitreten);
+$("homeJoin").addEventListener("click", beitreten);
 
 $("joinForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -360,6 +409,8 @@ async function doJoin(code) {
 
 $("backBtn").addEventListener("click", () => { location.hash = "#/trips"; });
 
+/* Live-Verbindung zu einer Reise aufbauen. Packliste und TripPlaner teilen
+   sie sich - wer zwischen beiden wechselt, muss nichts neu laden. */
 function openTrip(code) {
   closeTrip();
   ctx.code = code;
@@ -372,15 +423,17 @@ function openTrip(code) {
   $("tripCode").textContent = code;
   $("tripMembers").textContent = "";
   setCover(null);
+  $("plName").textContent = "Lädt …";
   modules.pack.reset(code);
+  modules.planer.reset(code);
   modules.photos.zurueckZuOrdnern();
   setTab("overview", true);
-  showScreen("screenTrip");
 
   unsubTrip = ctx.store.watchTrip(code, (trip, err) => {
     if (!trip) {
       ctx.trip = null;
       $("tripName").textContent = err ? "Nicht erreichbar" : "Nicht gefunden";
+      $("plName").textContent = $("tripName").textContent;
       $("syncNote").className = "sync warn";
       $("syncNote").textContent = err
         ? "Zugriff verweigert oder keine Verbindung."
@@ -437,6 +490,7 @@ function setCover(bytes) {
 function renderTrip() {
   const trip = ctx.trip;
   $("tripName").textContent = trip.name || "Reise";
+  $("plName").textContent = trip.name || "Reise";
   $("tripCode").textContent = ctx.code;
   if (trip.cover) setCover(trip.cover);
 
@@ -456,6 +510,7 @@ function renderTrip() {
   modules.plan.render();
   modules.spots.render();
   modules.map.render();
+  modules.planer.render();
   renderOverview();
 }
 
@@ -636,13 +691,20 @@ window.addEventListener("resize", () => markerZuTab(tab, true));
 
 /* ---------- Reise bearbeiten, teilen, verlassen, löschen ---------- */
 
-$("tripEditBtn").addEventListener("click", () => {
+function oeffneReiseDialog() {
+  if (!ctx.trip) return;
   $("editName").value = ctx.trip.name || "";
   $("editStart").value = ctx.trip.start || "";
   $("editEnd").value = ctx.trip.end || "";
   $("editErr").hidden = true;
   $("dlgTrip").showModal();
-});
+}
+$("tripEditBtn").addEventListener("click", oeffneReiseDialog);
+
+/* Sprung zwischen Packliste und TripPlaner derselben Reise */
+$("tripZumPlaner").addEventListener("click", () => { location.hash = "#/planer/" + ctx.code; });
+$("planerBtn").addEventListener("click", () => { location.hash = "#/planer/" + ctx.code; });
+$("plZurPackliste").addEventListener("click", () => { location.hash = "#/trip/" + ctx.code; });
 
 $("tripForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -737,7 +799,8 @@ document.querySelectorAll("dialog").forEach((d) => {
 /* ---------- Routing ---------- */
 
 function route() {
-  const hash = location.hash || "#/trips";
+  navNr++;
+  const hash = location.hash || "#/home";
   const joinMatch = hash.match(/^#\/join\/([A-Za-z0-9]+)/);
 
   if (joinMatch) {
@@ -753,12 +816,24 @@ function route() {
   if (tripMatch) {
     const code = tripMatch[1].toUpperCase();
     if (ctx.code !== code) openTrip(code);
-    else showScreen("screenTrip");
+    showScreen("screenTrip");
+    if (ctx.trip) renderTrip();
+    return;
+  }
+
+  const planerMatch = hash.match(/^#\/planer\/([A-Za-z0-9]+)/);
+  if (planerMatch) {
+    const code = planerMatch[1].toUpperCase();
+    if (ctx.code !== code) openTrip(code);
+    showScreen("screenPlaner");
+    modules.planer.activate();
     return;
   }
 
   closeTrip();
-  renderTrips();
+  if (hash === "#/planer") { renderPlanerList(); return; }
+  if (hash === "#/trips") { renderTrips(); return; }
+  renderHome();
 }
 
 window.addEventListener("hashchange", route);
@@ -816,6 +891,7 @@ function schritt(name) {
       map: initMap(ctx),
       planer: initTripPlaner(ctx)
     };
+    dash = initDashboard(ctx);
   } catch (err) {
     console.error("Baustein defekt:", err);
     $("errorText").textContent = "Ein Baustein der App ließ sich nicht starten: "
@@ -824,6 +900,8 @@ function schritt(name) {
     showScreen("screenError");
     return;
   }
+
+  ctx.editStop = (stop, vorgabe) => modules.plan.open(stop, vorgabe);
 
   ctx.openPhoto = (p) => {
     setTab("photos");

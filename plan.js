@@ -33,11 +33,12 @@ export function initPlan(ctx) {
 
   addBtn.addEventListener("click", () => openDialog(null));
 
-  function openDialog(stop) {
+  /* `vorgabe` fuellt eine neue Station vor - der TripPlaner gibt so den Tag mit. */
+  function openDialog(stop, vorgabe = {}) {
     editing = stop ? stop.id : null;
     title.textContent = stop ? "Station bearbeiten" : "Neue Station";
     fName.value = stop ? stop.name : "";
-    fDate.value = stop && stop.date ? stop.date : "";
+    fDate.value = stop && stop.date ? stop.date : (vorgabe.date || "");
     fNote.value = stop && stop.note ? stop.note : "";
     fQuery.value = "";
     results.textContent = "";
@@ -121,12 +122,17 @@ export function initPlan(ctx) {
     if (!name) return;
 
     const stops = ((ctx.trip && ctx.trip.stops) || []).map((s) => ({ ...s }));
+    // Felder, die dieser Dialog nicht kennt (z. B. die Kategorie aus dem
+    // TripPlaner), bleiben erhalten.
+    const alt = stops.find((s) => s.id === editing) || {};
     const entry = {
+      ...alt,
       id: editing || "s" + Date.now().toString(36) + Math.floor(Math.random() * 1000),
       name,
       date: fDate.value || "",
       note: fNote.value.trim()
     };
+    delete entry.lat; delete entry.lon; delete entry.place;
     if (picked) { entry.lat = picked.lat; entry.lon = picked.lon; entry.place = picked.place; }
 
     const at = stops.findIndex((s) => s.id === editing);
@@ -220,7 +226,7 @@ export function initPlan(ctx) {
     ctx.stagger(list.children);
   }
 
-  return { render };
+  return { render, open: openDialog };
 }
 
 /* Nach Datum sortieren, Stationen ohne Datum hinten anstellen. */

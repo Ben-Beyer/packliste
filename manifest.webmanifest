@@ -1,7 +1,7 @@
 {
   "name": "Reisebuddy",
   "short_name": "Reisebuddy",
-  "description": "Reisen planen, gemeinsam packen, Fotos sammeln und die gefahrene Route auf der Karte sehen.",
+  "description": "Packliste und TripPlaner in einer App: Route mit Karte und Tagesplan, gemeinsam packen, Fotos und Spots.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

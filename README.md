@@ -1,7 +1,11 @@
 # Reisebuddy
 
-Reisen planen, gemeinsam packen, Fotos in Ordnern sammeln, Spots erobern — und
-aus den Aufnahmeorten der Fotos wird eine Karte mit der gefahrenen Route.
+Zwei Werkzeuge in einer App: die **Packliste** zum gemeinsamen Packen und der
+**TripPlaner** zum Planen der Route — mit Karte, Tagen, Kilometern und Fahrzeit.
+Dazu Fotos in Ordnern, Spots zum Erobern und die gefahrene Route aus den Fotos.
+
+Alles startet direkt beim Öffnen der Adresse. Es gibt kein Backend, das erst
+hochgefahren werden muss — auch der TripPlaner läuft komplett im Browser.
 
 Live: **https://ben-beyer.github.io/packliste/**
 (Die Adresse behält den alten Namen, damit installierte Geräte weiterlaufen.)
@@ -15,13 +19,50 @@ bezahlten Dienste, keine Schlüssel mit Kosten, keine Kreditkarte.
 2. Teilen-Symbol → **Zum Home-Bildschirm**.
 3. Läuft danach im Vollbild wie eine App, auch ohne Netz.
 
-## Die sechs Reiter
+## Dashboard
+
+Die Startseite. Oben der Gruß, darunter die zwei großen Werkzeuge als Karten:
+**Packliste** (Fortschritt über alle Reisen) und **TripPlaner** (Stationen und
+geplante Kilometer). Dann die nächste Reise im Rampenlicht mit Countdown,
+Pack-Ring, Routenskizze und den Knöpfen *Weiterpacken* / *Route planen*, vier
+Kennzahlen und die Reiseliste mit Schnellzugriff auf beide Werkzeuge.
+
+Bewegung: Gruß Wort für Wort hinter einer Maske, die Werkzeug-Karten kippen nach
+vorn, Ringe und Zahlen laufen hoch, Routen zeichnen sich selbst, im Hintergrund
+treiben Farbflächen über Höhenlinien. Mit Maus neigen sich die Karten zum Zeiger.
+
+## TripPlaner
+
+Fest eingebaut, kein Unterpunkt mehr: eigener Vollbild-Arbeitsplatz unter
+`#/planer/<code>`, am Rechner Liste links und Karte rechts, am Handy Karte oben.
+Er plant **dieselbe Reise** wie die Packliste — gespeichert wird in den
+Stationen der Reise, live für alle mit dem Code. Ein Knopf springt jeweils zur
+Packliste bzw. zum TripPlaner derselben Reise.
+
+| Bereich | Was drin ist |
+| --- | --- |
+| **Route** | Tage aus dem Zeitraum, Stationen je Tag mit Etappe (km · Zeit), Verkehrsmittel Auto/Rad/zu Fuß, Reihenfolge optimieren, Tag in Google Maps, Stationen verschieben (Pfeile, Tagwahl, am Rechner ziehen), Merkliste für Ideen ohne Tag |
+| **Entdecken** | Ortssuche, zehn Kategorien (Sehenswertes, Museen, Aussicht, Natur, Strand, Essen, Café, Camping, Unterkunft, Tanken) im Kartenausschnitt, mit einem Tipp einplanen |
+| **Teilen & Daten** | Google Maps, GPX (Wegpunkte, Route, Straßenspur), Plan als Text, JSON im alten TripPlaner-Format kopieren und einfügen |
+
+Ein Tipp auf die Karte setzt eine Station; der Ortsname wird erst beim
+Bestätigen nachgeschlagen. Die Straßenroute kommt von OSRM; antwortet der
+Dienst nicht, zeigt der Planer die Luftlinie (×1,3) und sagt das dazu. Die
+Reihenfolge wird mit nächstem Nachbarn plus 2-opt optimiert und beginnt am
+Ende des Vortags.
+
+**Das alte Uni-Projekt** (Spring Boot auf `localhost:8080`) wird nicht mehr
+gebraucht. Unter *Teilen & Daten → Aus dem alten Uni-Projekt holen* lassen sich
+alte Sitzungen (`trip-…`) noch übernehmen — nur am Rechner mit laufendem
+Backend in Chrome/Edge. Das JSON-Feld geht überall.
+
+## Die sechs Reiter einer Reise
 
 | Reiter | Was drin ist |
 | --- | --- |
 | **Übersicht** | Zeitraum, Countdown, vier Kennzahlen, Wetteraussicht am Ziel, Mitreisende, Einladungscode |
 | **Packen** | Bereiche und Positionen, „je Person“ und „einer reicht“ |
-| **Plan** | Stationen mit Datum, Notiz und Ort; Brücke zum TripPlaner |
+| **Plan** | Stationen mit Datum, Notiz und Ort; Sprung in den TripPlaner |
 | **Fotos** | Ordner je Person, Galerie, Großansicht, Ort nachtragen |
 | **Spots** | Challenge: schöne Orte markieren, Freunde herausfordern, Rangliste |
 | **Karte** | Gefahrene Route aus den Fotos, geplante Stationen, Spots — einzeln einblendbar |
@@ -73,22 +114,6 @@ Spots liegen als Feld `challenges` im Reise-Dokument, nicht in einem eigenen
 Unterordner — so braucht es keine zusätzliche Firestore-Regel, und weil jeder
 Zugriff ein Punktpfad ist (`challenges.<id>.done.<person>`), überschreiben sich
 zwei Leute nicht.
-
-## TripPlaner-Brücke
-
-Der TripPlaner ist ein eigenes Projekt mit Spring-Boot-Backend auf `localhost`.
-**An ihm wurde nichts geändert.** Die Brücke sitzt komplett in Reisebuddy, im
-Reiter *Plan*:
-
-| Richtung | Weg | Wo es funktioniert |
-| --- | --- | --- |
-| TripPlaner → Reisebuddy | Sitzungs-ID (`trip-…`) eintippen, Reisebuddy holt die POIs | nur am Rechner, Backend auf `localhost:8080`, Chrome/Edge |
-| TripPlaner → Reisebuddy | JSON einfügen | überall, auch am iPhone |
-| Reisebuddy → TripPlaner | Stationen kopieren oder TripPlaner öffnen | am Rechner |
-
-Doppelte Namen werden beim Übernehmen übersprungen. Safari verbietet einer
-https-Seite den Zugriff auf `http://localhost` — deshalb geht der direkte Weg
-dort nicht. Das Einfügen-Feld geht immer.
 
 ## Wer darf was sehen
 
@@ -143,11 +168,15 @@ Handy bleibt das native Scrollen.
 | Kartenbilder | OpenStreetMap | nein |
 | Kartenbibliothek | Leaflet 1.9.4 (cdnjs) | nein |
 | Ortssuche | Nominatim | nein |
+| Kartenbilder TripPlaner | CARTO Voyager / Dark Matter, notfalls OpenStreetMap | nein |
+| Straßenroute | OSRM (routing.openstreetmap.de, router.project-osrm.org) | nein |
+| Orte entdecken | Overpass-API (OpenStreetMap) | nein |
 | Wetter | Open-Meteo | nein |
 | Animation | GSAP 3.13 (cdnjs), Lenis (jsDelivr) | nein |
 
-Nominatim wird nur auf Knopfdruck gefragt — deren Nutzungsordnung erlaubt keine
-Anfrage pro Tastendruck.
+Nominatim und Overpass werden nur auf Knopfdruck gefragt — deren
+Nutzungsordnungen erlauben keine Anfrage pro Tastendruck. Die Route wird nur
+neu gerechnet, wenn sich Stationen mit Ort ändern, und im Speicher gemerkt.
 
 ## Ändern
 
@@ -160,8 +189,8 @@ Die Startvorlage für neue Reisen steht in `data.js` als `TEMPLATE`:
 ]}                                       // mittlerer Eintrag = graue Notiz darunter
 ```
 
-Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen** (`reisebuddy-v13`
-→ `v14`). Der Service Worker holt eigene Dateien mit `no-cache`, fragt also beim
+Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen** (`reisebuddy-v17`
+→ `v18`). Der Service Worker holt eigene Dateien mit `no-cache`, fragt also beim
 Server nach — sonst liefert GitHub Pages bis zu zehn Minuten alte Dateien aus,
 und neue treffen auf alte Bausteine.
 
@@ -181,7 +210,9 @@ und neue treffen auf alte Bausteine.
 | --- | --- |
 | Dein Name | `localStorage`, `reisebuddy.v1.user` |
 | Deine Reiseliste | `localStorage`, `reisebuddy.v1.mytrips` — nur die Codes |
-| Reise, Packliste, Stationen, Haken, Spots, Titelbild | Firestore, `trips/<code>` |
+| TripPlaner: Verkehrsmittel, Bereich, Zieltag | `localStorage`, `reisebuddy.v1.planer.<code>` |
+| Zuletzt gerechnete Route (für das Dashboard) | `localStorage`, `reisebuddy.v1.route.<code>` |
+| Reise, Packliste, Stationen (auch die des TripPlaners), Haken, Spots, Titelbild | Firestore, `trips/<code>` |
 | Foto-Eintrag samt Vorschaubild | Firestore, `trips/<code>/photos/<id>` |
 | Großes Bild | Firestore, `trips/<code>/photoData/<id>` |
 
@@ -191,15 +222,17 @@ und neue treffen auf alte Bausteine.
 | --- | --- |
 | `index.html` | Aufbau aller Bildschirme, Reiter und Dialoge |
 | `style.css` | Gestaltung, Hell- und Dunkelmodus über Tokens |
-| `app.js` | Rahmen: Name, Reiseliste, Reiter, Übersicht, Wetter, Routing |
+| `app.js` | Rahmen: Name, Dashboard, Reiseliste, Reiter, Übersicht, Wetter, Adressen |
+| `dashboard.js` | Startseite und Reiseauswahl des TripPlaners |
+| `tripplaner.js` | TripPlaner: Tage, Karte, Entdecken, Teilen & Daten |
+| `routing.js` | Straßenroute, Orte (Overpass), Ortssuche, Optimierung, GPX |
 | `packliste.js` | Packliste |
-| `plan.js` | Stationen samt Ortssuche |
+| `plan.js` | Stationen samt Ortssuche (auch der Bearbeiten-Dialog des TripPlaners) |
 | `photos.js` | Hochladen, Verkleinern, Ordner, Galerie, Ort nachtragen |
 | `spots.js` | Challenge-Spots und Rangliste |
 | `mapview.js` | Karte, Ebenen, Routen, Kilometer |
 | `motion.js` | GSAP/Lenis, Intro, Auftritte, Übergänge |
 | `weather.js` | Vorhersage von Open-Meteo |
-| `tripplaner.js` | Brücke zum TripPlaner |
 | `exif.js` | Aufnahmeort und -zeit aus JPEG, HEIC und PNG |
 | `store.js` | Firestore-Schicht |
 | `data.js` | Vorlage für neue Reisen |

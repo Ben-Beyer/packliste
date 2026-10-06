@@ -63,13 +63,139 @@
   </div>
 </section>
 
+<!-- ============ Dashboard ============ -->
+<section class="screen dash" id="screenHome" hidden>
+  <div class="dash-bg" aria-hidden="true">
+    <span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span>
+    <svg class="dash-topo" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <path d="M-50 620C120 560 230 640 380 600s260-130 420-110 260 120 460 60"/>
+        <path d="M-50 560C110 500 240 580 380 540s260-140 430-120 250 110 450 50"/>
+        <path d="M-50 500C100 440 250 520 390 480s270-150 440-130 240 100 430 40"/>
+        <path d="M-50 440C90 380 260 460 400 420s280-160 450-140 230 90 410 30"/>
+        <path d="M-50 380C80 320 270 400 410 360s290-170 460-150 220 80 390 20"/>
+        <path d="M-50 320C70 260 280 340 420 300s300-180 470-160 210 70 370 10"/>
+        <path d="M640 250c40-30 110-34 150-6s30 80-20 96-120 10-140-30 0-50 10-60z"/>
+        <path d="M670 262c26-18 74-20 98-2s18 52-14 62-78 6-90-20 0-32 6-40z"/>
+        <path d="M200 160c60-40 160-30 190 20s-30 100-110 96-140-70-80-116z"/>
+      </g>
+    </svg>
+    <span class="dash-grain"></span>
+  </div>
+
+  <header class="dash-top wrap-wide">
+    <div class="dash-brand">
+      <span class="dash-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18c3-6 6-9 9-9s5 2 7-1"/><circle cx="4" cy="18" r="1.8" fill="currentColor" stroke="none"/><path d="M20 4.5a2.6 2.6 0 0 0-2.6 2.6c0 1.9 2.6 4.4 2.6 4.4s2.6-2.5 2.6-4.4A2.6 2.6 0 0 0 20 4.5z" transform="translate(-4 -1)"/></svg>
+      </span>
+      <span class="dash-brand-text">Reisebuddy</span>
+    </div>
+    <button type="button" class="who" id="homeWho" title="Namen ändern" data-go="#/name">
+      <span class="avatar" id="homeWhoAvatar" aria-hidden="true"></span>
+      <span class="who-name" id="homeWhoName"></span>
+    </button>
+  </header>
+
+  <main class="wrap-wide dash-main">
+    <div class="dash-hello">
+      <div class="eyebrow" id="homeDate"></div>
+      <h1 class="dash-greet" id="homeGreet">Hallo.</h1>
+      <p class="dash-lead" id="homeLead"></p>
+    </div>
+
+    <div class="dash-mods">
+      <button type="button" class="mod mod-pack" id="modPack" data-go="#/trips">
+        <span class="mod-licht" aria-hidden="true"></span>
+        <span class="mod-kopf">
+          <span class="mod-nr">01</span>
+          <span class="mod-pfeil" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+        </span>
+        <span class="mod-art" aria-hidden="true">
+          <svg viewBox="0 0 220 130" class="art-pack">
+            <rect class="art-papier" x="18" y="10" width="124" height="112" rx="12"/>
+            <g class="art-zeile"><rect class="art-box" x="34" y="28" width="16" height="16" rx="5"/><path class="art-tick" d="M37.5 36.5l3.4 3.4 6.4-7"/><rect class="art-bar" x="60" y="32" width="64" height="7" rx="3.5"/></g>
+            <g class="art-zeile"><rect class="art-box" x="34" y="56" width="16" height="16" rx="5"/><path class="art-tick" d="M37.5 64.5l3.4 3.4 6.4-7"/><rect class="art-bar" x="60" y="60" width="50" height="7" rx="3.5"/></g>
+            <g class="art-zeile"><rect class="art-box" x="34" y="84" width="16" height="16" rx="5"/><path class="art-tick" d="M37.5 92.5l3.4 3.4 6.4-7"/><rect class="art-bar dim" x="60" y="88" width="58" height="7" rx="3.5"/></g>
+          </svg>
+          <span class="mod-ring" id="modPackRing" style="--p:0"><span id="modPackRingZahl">0%</span></span>
+        </span>
+        <span class="mod-titel">Packliste</span>
+        <span class="mod-text">Gemeinsam packen – „je Person“ oder „einer reicht“, live für alle mit dem Code.</span>
+        <span class="mod-stat" id="modPackStat"></span>
+      </button>
+
+      <button type="button" class="mod mod-plan" id="modPlan" data-go="#/planer">
+        <span class="mod-licht" aria-hidden="true"></span>
+        <span class="mod-kopf">
+          <span class="mod-nr">02</span>
+          <span class="mod-pfeil" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+        </span>
+        <span class="mod-art" aria-hidden="true">
+          <svg viewBox="0 0 220 130" class="art-plan">
+            <g class="art-gitter"><path d="M0 40h220M0 80h220M0 120h220M50 0v130M110 0v130M170 0v130"/></g>
+            <path class="art-land" d="M8 96c20-30 48-34 70-22s42 4 58-18 50-30 76-12v86H8z"/>
+            <path class="art-route" d="M30 104C52 80 70 88 88 70s28-40 56-36 40 22 50-6"/>
+            <g class="art-pin"><circle cx="30" cy="104" r="6"/></g>
+            <g class="art-pin"><circle cx="88" cy="70" r="6"/></g>
+            <g class="art-pin"><circle cx="144" cy="34" r="6"/></g>
+            <g class="art-pin ziel"><path d="M194 30c-8-9-13-15-13-21a13 13 0 0 1 26 0c0 6-5 12-13 21z"/><circle cx="194" cy="9" r="4.5"/></g>
+          </svg>
+        </span>
+        <span class="mod-titel">TripPlaner</span>
+        <span class="mod-text">Route mit Karte, Tagesplan, Kilometern und Fahrzeit – Orte entdecken und einplanen.</span>
+        <span class="mod-stat" id="modPlanStat"></span>
+      </button>
+    </div>
+
+    <section class="dash-next" id="homeNext" hidden>
+      <div class="next-links">
+        <div class="eyebrow">Nächste Reise</div>
+        <h2 class="next-name" id="nextName"></h2>
+        <div class="next-when" id="nextWhen"></div>
+        <div class="next-count"><b id="nextZahl">–</b><span id="nextEinheit"></span></div>
+        <div class="next-facts" id="nextFacts"></div>
+        <div class="next-knoepfe">
+          <button type="button" class="btn" id="nextPack">Weiterpacken</button>
+          <button type="button" class="btn primary" id="nextPlan">Route planen</button>
+        </div>
+      </div>
+      <div class="next-rechts">
+        <div class="next-ring" id="nextRing" style="--p:0"><span id="nextRingZahl">0%</span><small>gepackt</small></div>
+        <div class="next-skizze" id="nextSkizze"></div>
+      </div>
+    </section>
+
+    <div class="dash-kpis" id="homeKpis"></div>
+    <p class="hint" id="homeKpiNote"></p>
+
+    <section class="dash-sektion">
+      <div class="dash-sektion-kopf">
+        <h2 class="panel-title">Deine Reisen</h2>
+        <div class="dash-sektion-knoepfe">
+          <button type="button" class="btn" id="homeJoin">Mit Code beitreten</button>
+          <button type="button" class="btn primary" id="homeNew">+ Neue Reise</button>
+        </div>
+      </div>
+      <div class="dash-reisen" id="homeTrips"></div>
+      <div class="empty big" id="homeTripsEmpty" hidden>
+        <p><strong>Noch keine Reise.</strong></p>
+        <p>Leg eine an – du bekommst einen Code für die Mitreisenden. Dann packt und plant ihr gemeinsam.</p>
+      </div>
+    </section>
+    <p class="hint install">Zum Installieren: in Safari öffnen, Teilen-Symbol, <strong>Zum Home-Bildschirm</strong>.</p>
+  </main>
+</section>
+
 <!-- ============ Reiseliste ============ -->
 <section class="screen" id="screenTrips" hidden>
   <header class="topbar">
     <div class="wrap">
       <div class="bar-row">
+        <button type="button" class="icon-btn" data-go="#/home" aria-label="Zum Dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
         <div class="bar-title">
-          <div class="eyebrow">Reisebuddy</div>
+          <div class="eyebrow">Packliste</div>
           <h1 id="tripsHeadline">Deine Reisen</h1>
         </div>
         <button type="button" class="who" id="whoBtn" title="Namen ändern">
@@ -96,8 +222,153 @@
       <button type="button" class="btn" id="joinTripBtn">Mit Code beitreten</button>
     </div>
 
-    <p class="hint install">Zum Installieren: in Safari öffnen, Teilen-Symbol, <strong>Zum Home-Bildschirm</strong>.</p>
   </main>
+</section>
+
+<!-- ============ TripPlaner: Reise wählen ============ -->
+<section class="screen" id="screenPlanerList" hidden>
+  <header class="topbar">
+    <div class="wrap">
+      <div class="bar-row">
+        <button type="button" class="icon-btn" data-go="#/home" aria-label="Zum Dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="bar-title">
+          <div class="eyebrow">TripPlaner</div>
+          <h1>Welche Reise planen?</h1>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main class="wrap pc-main">
+    <div class="pc-liste" id="planerList"></div>
+    <div class="empty big" id="planerEmpty" hidden>
+      <p><strong>Noch keine Reise.</strong></p>
+      <p>Leg eine an – Packliste und Route gehören zur selben Reise und werden mit allen geteilt, die den Code haben.</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="planerNewTrip">+ Neue Reise anlegen</button>
+    </div>
+  </main>
+</section>
+
+<!-- ============ TripPlaner ============ -->
+<section class="screen planer" id="screenPlaner" hidden>
+  <header class="pl-bar">
+    <button type="button" class="icon-btn" data-go="#/planer" aria-label="Andere Reise wählen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="bar-title">
+      <div class="eyebrow">TripPlaner</div>
+      <h1 id="plName">Reise</h1>
+    </div>
+    <button type="button" class="pl-sprung" id="plZurPackliste" title="Zur Packliste dieser Reise">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+      <span>Packliste</span>
+    </button>
+    <button type="button" class="icon-btn" data-go="#/home" aria-label="Zum Dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    </button>
+  </header>
+
+  <div class="pl-shell">
+    <div class="pl-kartenhaus">
+      <div class="pl-karte" id="plMap"></div>
+      <div class="pl-karte-oben">
+        <div class="pl-status leer" id="plStatus"><i aria-hidden="true"></i><span>Lädt …</span></div>
+      </div>
+      <div class="pl-karte-unten">
+        <button type="button" class="pl-float" id="plFit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          Alles zeigen
+        </button>
+        <button type="button" class="pl-float" id="plSpotsToggle" aria-pressed="true">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          Spots
+        </button>
+      </div>
+      <p class="pl-karten-note" id="plMapNote" hidden></p>
+    </div>
+
+    <aside class="pl-seite" id="plSeite" data-lenis-prevent>
+      <div class="pl-summe" id="plSumme"></div>
+
+      <div class="pl-seg" role="tablist" aria-label="Bereiche des TripPlaners">
+        <span class="pl-seg-marke" id="plSegMarke" aria-hidden="true"></span>
+        <button type="button" role="tab" data-pl-pane="route" aria-selected="true">Route</button>
+        <button type="button" role="tab" data-pl-pane="find" aria-selected="false">Entdecken</button>
+        <button type="button" role="tab" data-pl-pane="data" aria-selected="false">Teilen &amp; Daten</button>
+      </div>
+
+      <!-- Route -->
+      <div class="pl-pane" id="plPaneRoute">
+        <div class="pl-werkzeug">
+          <div class="pl-profile" id="plProfile" role="group" aria-label="Verkehrsmittel"></div>
+          <button type="button" class="btn primary" id="plNeuBtn">+ Station</button>
+        </div>
+        <div class="pl-hinweis" id="plZeitraum" hidden>
+          <span>Ohne Zeitraum gibt es keine Tage – alles liegt in einer Route.</span>
+          <button type="button" class="btn" id="plZeitraumBtn">Zeitraum festlegen</button>
+        </div>
+        <div class="pl-tage" id="plTage"></div>
+        <p class="hint">Tipp auf die Karte setzt eine Station. Am Rechner lassen sich Stationen auch zwischen Tagen hin- und herziehen.</p>
+      </div>
+
+      <!-- Entdecken -->
+      <div class="pl-pane" id="plPaneFind" hidden>
+        <label class="lbl" for="plSuche">Ziel oder Ort suchen</label>
+        <div class="search-row">
+          <input class="field" id="plSuche" maxlength="80" placeholder="z. B. Danzig, Masuren, Hel" autocomplete="off">
+          <button type="button" class="btn" id="plSucheBtn">Suchen</button>
+        </div>
+        <div class="pl-treffer" id="plTreffer" hidden></div>
+
+        <div class="pl-ziel">
+          <label class="lbl" for="plZielTag">Neues kommt nach</label>
+          <select class="field" id="plZielTag"></select>
+        </div>
+
+        <span class="lbl">Was gibt es im Kartenausschnitt?</span>
+        <div class="pl-kats" id="plKats"></div>
+        <button type="button" class="btn block" id="plHier">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          Hier suchen
+        </button>
+        <p class="pl-find-status" id="plFindStatus" aria-live="polite"></p>
+        <div class="pl-funde" id="plFunde"></div>
+        <p class="hint">Orte kommen aus OpenStreetMap (Overpass), kostenlos und ohne Anmeldung.</p>
+      </div>
+
+      <!-- Teilen & Daten -->
+      <div class="pl-pane" id="plPaneData" hidden>
+        <h3 class="dlg-sub erst">Mitnehmen</h3>
+        <div class="pl-export">
+          <button type="button" class="pl-export-k" id="plGoogle"><b>Google Maps</b><small>Ganze Route als Navigation öffnen</small></button>
+          <button type="button" class="pl-export-k" id="plGpx"><b>GPX-Datei</b><small>Für Komoot, OsmAnd, Garmin</small></button>
+          <button type="button" class="pl-export-k" id="plTeilen"><b>Plan teilen</b><small>Tage und Stationen als Text</small></button>
+          <button type="button" class="pl-export-k" id="plKopieren"><b>JSON kopieren</b><small>Austauschformat des alten TripPlaners</small></button>
+        </div>
+
+        <h3 class="dlg-sub">Übernehmen</h3>
+        <label class="lbl" for="plJson">Daten einfügen (JSON aus dem alten TripPlaner oder einer anderen Reise)</label>
+        <textarea class="field area" id="plJson" rows="3" placeholder='[{"name":"Danzig","latitude":54.35,"longitude":18.65}]'></textarea>
+        <button type="button" class="btn block" id="plImport">Als Stationen übernehmen</button>
+
+        <details class="pl-alt">
+          <summary>Aus dem alten Uni-Projekt (Spring Boot) holen</summary>
+          <p class="hint">Nur nötig für alte Sitzungen. Geht am Rechner, auf dem das alte Backend auf <code>localhost:8080</code> läuft, in Chrome oder Edge.</p>
+          <div class="search-row">
+            <input class="field" id="plAltId" placeholder="trip-…" autocomplete="off">
+            <button type="button" class="btn" id="plAltHolen">Holen</button>
+          </div>
+        </details>
+        <p class="err" id="plDatenErr" hidden></p>
+
+        <h3 class="dlg-sub">Aufräumen</h3>
+        <button type="button" class="linkish danger" id="plLeeren">Alle Stationen löschen</button>
+      </div>
+    </aside>
+  </div>
 </section>
 
 <!-- ============ Eine Reise ============ -->
@@ -113,6 +384,9 @@
           <div class="eyebrow"><span id="tripMembers">—</span></div>
           <h1 id="tripName">Reise</h1>
         </div>
+        <button type="button" class="icon-btn" id="tripZumPlaner" title="Im TripPlaner öffnen" aria-label="Im TripPlaner öffnen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+        </button>
         <button type="button" class="code-chip" id="codeBtn" title="Code teilen">
           <span id="tripCode">------</span>
         </button>
@@ -229,6 +503,18 @@
       <button type="button" class="btn primary" id="stopAddBtn">+ Station</button>
     </div>
 
+    <button type="button" class="planer-btn" id="planerBtn">
+      <span class="planer-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+      </span>
+      <span class="planer-text">
+        <strong>Im TripPlaner planen</strong>
+        <small>Karte, Tage, Straßenroute mit km und Fahrzeit, Orte entdecken</small>
+      </span>
+      <svg class="planer-pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+
+
     <div class="stop-list" id="stopList"></div>
 
     <div class="empty" id="stopEmpty" hidden>
@@ -236,16 +522,6 @@
       <p>Trag ein, wo ihr hinwollt — mit Datum und Ort. Stationen mit Ort erscheinen als geplante Route auf der Karte.</p>
     </div>
 
-    <button type="button" class="planer-btn" id="planerBtn">
-      <span class="planer-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
-      </span>
-      <span class="planer-text">
-        <strong>TripPlaner</strong>
-        <small>Geplante Orte übernehmen oder Stationen hinüberschieben</small>
-      </span>
-      <svg class="planer-pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-    </button>
 
     <p class="hint">Die Ortssuche kommt von OpenStreetMap und ist kostenlos. Ohne Ort lässt sich eine Station trotzdem speichern, sie taucht dann nur nicht auf der Karte auf.</p>
   </main>
@@ -500,37 +776,6 @@
     <div class="dlg-actions">
       <button type="button" class="btn" data-close>Abbrechen</button>
       <button type="button" class="btn" id="placeClear" hidden>Ort entfernen</button>
-    </div>
-  </div>
-</dialog>
-
-<dialog id="dlgPlaner">
-  <div class="dlg">
-    <h2>TripPlaner</h2>
-    <p>Beide Richtungen: geplante Orte hierher holen, oder deine Stationen hinüberschieben.</p>
-
-    <h3 class="dlg-sub">Von dort nach hier</h3>
-    <label class="lbl" for="planerId">Sitzungs-ID (am Rechner, wenn der TripPlaner läuft)</label>
-    <div class="search-row">
-      <input class="field" id="planerId" placeholder="trip-…" autocomplete="off">
-      <button type="button" class="btn" id="planerFetch">Holen</button>
-    </div>
-    <label class="lbl" for="planerJson">… oder Daten einfügen (geht überall)</label>
-    <textarea class="field area" id="planerJson" rows="3" placeholder='[{"name":"Danzig","latitude":54.35,"longitude":18.65}]'></textarea>
-    <button type="button" class="btn block" id="planerImport">Als Stationen übernehmen</button>
-
-    <h3 class="dlg-sub">Von hier nach dort</h3>
-    <textarea class="field area" id="planerExport" rows="3" readonly></textarea>
-    <div class="dlg-actions">
-      <button type="button" class="btn" id="planerCopy">Kopieren</button>
-      <button type="button" class="btn" id="planerOpen">TripPlaner öffnen</button>
-    </div>
-
-    <p class="err" id="planerErr" hidden></p>
-    <p class="hint" id="planerInfo" hidden></p>
-    <p class="hint">Der direkte Weg braucht das TripPlaner-Backend auf <code>localhost:8080</code> und funktioniert nur am Rechner in Chrome oder Edge. Auf dem iPhone nimm das Einfügen-Feld.</p>
-    <div class="dlg-actions">
-      <button type="button" class="btn" data-close>Schließen</button>
     </div>
   </div>
 </dialog>

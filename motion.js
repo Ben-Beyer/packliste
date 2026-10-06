@@ -252,6 +252,76 @@ function feiern(el) {
   }
 }
 
+/* ---------- Dashboard ----------
+
+   Eine Zeitleiste fuer die Startseite: Gruss Wort fuer Wort hinter einer
+   Maske, die beiden Werkzeuge kippen nach vorn, Ring und Zahlen laufen hoch,
+   die Route auf der Planer-Karte zeichnet sich. Ohne GSAP steht einfach alles
+   im Endzustand da - die Seite ist von Anfang an vollstaendig. */
+
+function dashboard(root) {
+  if (!root || !an()) return;
+  const q = (s) => [...root.querySelectorAll(s)];
+
+  // Gruss in Woerter zerlegen (jedes Mal neu, der Text aendert sich)
+  const gruss = root.querySelector("#homeGreet");
+  if (gruss) {
+    const worte = gruss.textContent.split(" ");
+    gruss.textContent = "";
+    worte.forEach((w, i) => {
+      const huelle = document.createElement("span");
+      huelle.className = "wort";
+      const innen = document.createElement("span");
+      innen.textContent = w + (i < worte.length - 1 ? " " : "");
+      huelle.appendChild(innen);
+      gruss.appendChild(huelle);
+    });
+  }
+
+  const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+  tl.fromTo(q(".dash-top > *"), { y: -14, opacity: 0 }, { y: 0, opacity: 1, duration: .7, stagger: .06, clearProps: "transform" }, 0)
+    .fromTo(q("#homeDate"), { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: .7 }, .05)
+    .fromTo(q("#homeGreet .wort > span"), { yPercent: 110 }, { yPercent: 0, duration: 1.05, stagger: .07 }, .1)
+    .fromTo(q("#homeLead"), { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: .8 }, .35)
+    .fromTo(q(".mod"), { y: 46, opacity: 0, rotateX: 9, transformPerspective: 900 },
+      { y: 0, opacity: 1, rotateX: 0, duration: 1.15, stagger: .12, clearProps: "transform,opacity" }, .3)
+    .fromTo(q(".art-tick"), { scale: 0, opacity: 0, transformOrigin: "50% 50%" },
+      { scale: 1, opacity: 1, duration: .5, stagger: .12, ease: "back.out(2.4)" }, .75)
+    .fromTo(q(".art-bar"), { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: .8, stagger: .08 }, .7)
+    .fromTo(q(".art-pin"), { y: -18, opacity: 0 }, { y: 0, opacity: 1, duration: .6, stagger: .14, ease: "back.out(2)" }, 1.0)
+    .fromTo(q("#homeNext:not([hidden]), .kpi, .dash-reise, .dash-sektion-kopf"), { y: 26, opacity: 0 },
+      { y: 0, opacity: 1, duration: .9, stagger: .05, clearProps: "transform,opacity" }, .55);
+
+  // Routen sich selbst zeichnen lassen
+  q(".art-route, #nextSkizze .skizze-weg, .dash-reise .skizze-weg").forEach((p, i) => {
+    if (!p.getTotalLength) return;
+    const len = p.getTotalLength();
+    tl.fromTo(p, { strokeDasharray: len, strokeDashoffset: len },
+      { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut",
+        onComplete: () => { p.style.strokeDasharray = ""; p.style.strokeDashoffset = ""; } }, .8 + i * .05);
+  });
+
+  // Ringe fuellen sich
+  q("#modPackRing, #nextRing").forEach((r) => {
+    const ziel = parseFloat(getComputedStyle(r).getPropertyValue("--p")) || 0;
+    tl.fromTo(r, { "--p": 0 }, { "--p": ziel, duration: 1.6, ease: "power3.out" }, .7);
+  });
+
+  // Zahlen laufen hoch. Der richtige Wert steht schon drin - laeuft die
+  // Animation nicht, bleibt er einfach stehen.
+  q("[data-zahl]").forEach((z) => {
+    const ziel = Number(z.dataset.zahl);
+    if (!isFinite(ziel) || z.dataset.zahl === "") return;
+    const suffix = z.dataset.suffix || "";
+    const o = { v: 0 };
+    tl.to(o, {
+      v: ziel, duration: 1.4, ease: "power3.out",
+      onUpdate: () => { z.textContent = Math.round(o.v).toLocaleString("de-DE") + suffix; },
+      onComplete: () => { z.textContent = ziel.toLocaleString("de-DE") + suffix; }
+    }, .75);
+  });
+}
+
 /* ---------- Scrollen steuern ---------- */
 
 function scrollStop() { if (lenis) lenis.stop(); }
@@ -265,7 +335,7 @@ const api = {
   get gsap() { return gsap; },
   aktiv: () => an(),
   intro, stagger, reveal, zeilen, screenIn, panelIn,
-  openLightbox, count, feiern,
+  openLightbox, count, feiern, dashboard,
   scrollStop, scrollStart, scrollTop
 };
 
