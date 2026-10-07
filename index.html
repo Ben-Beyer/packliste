@@ -504,6 +504,18 @@
       </button>
     </div>
 
+    <div class="vorschlag" id="vorschlag" hidden>
+      <span class="vorschlag-icon" aria-hidden="true">✨</span>
+      <div class="vorschlag-text">
+        <b id="vorschlagTitel"></b>
+        <span id="vorschlagListe"></span>
+      </div>
+      <div class="vorschlag-actions">
+        <button type="button" class="btn" id="vorschlagNein">Nein danke</button>
+        <button type="button" class="btn primary" id="vorschlagJa">Übernehmen</button>
+      </div>
+    </div>
+
     <div class="sections" id="sections"></div>
     <button type="button" class="btn ghost block" id="addSectionBtn">+ Bereich hinzufügen</button>
 
@@ -718,6 +730,17 @@
       <button type="submit" class="btn primary">Hinzufügen</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="dlgDel">
+  <div class="dlg">
+    <h2 id="delTitel">Löschen?</h2>
+    <p id="delText"></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" data-close>Abbrechen</button>
+      <button type="button" class="btn danger" id="delOk">Löschen</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog id="dlgStop">

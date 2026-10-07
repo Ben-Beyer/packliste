@@ -10,7 +10,7 @@
    Adressen:  #/home  #/trips  #/trip/<code>  #/planer  #/planer/<code>
               #/name  #/join/<code> */
 
-import { TEMPLATE, EMPTY_SECTIONS, buildSections } from "./data.js";
+import { TEMPLATE, EMPTY_SECTIONS, VORLAGE_STAND, buildSections } from "./data.js";
 import { createStore, myTrips, rememberTrip, forgetTrip, memberKey } from "./store.js";
 import { initPackliste } from "./packliste.js";
 import { initPlan } from "./plan.js";
@@ -355,7 +355,8 @@ $("newForm").addEventListener("submit", async (e) => {
   btn.textContent = "Lege an …";
   try {
     const code = await ctx.store.createTrip({
-      name, start: $("newStart").value, end: $("newEnd").value, sections, by: ctx.user
+      name, start: $("newStart").value, end: $("newEnd").value, sections,
+      vorlage: VORLAGE_STAND, by: ctx.user
     });
     rememberTrip(code);
     $("dlgNew").close();

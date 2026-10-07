@@ -120,7 +120,7 @@ export async function createStore() {
 
     /* ---- Reise ---- */
 
-    async createTrip({ name, start, end, sections, by }) {
+    async createTrip({ name, start, end, sections, vorlage, by }) {
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = newCode();
         if ((await fs.getDoc(tripRef(code))).exists()) continue;
@@ -129,6 +129,7 @@ export async function createStore() {
           start: start || "",
           end: end || "",
           sections,
+          vorlage: vorlage || 0,
           stops: [],
           checks: {},
           challenges: {},
@@ -172,6 +173,22 @@ export async function createStore() {
     async clearChecks(code) { await fs.updateDoc(tripRef(code), { checks: {} }); },
 
     async setSections(code, sections) { await fs.updateDoc(tripRef(code), { sections }); },
+
+    /* Packliste umbauen (Loeschen, Aufraeumen) in einem Schritt, damit keine
+       verwaisten Haken zurueckbleiben:
+         sections  - die neuen Bereiche
+         drop      - IDs, deren Haken wegfallen
+         marks     - {id: Haken} fuer Positionen, die Haken uebernehmen
+         entfernt  - Namen, die in DIESER Reise geloescht wurden; die Vorlage
+                     bietet sie hier nicht wieder an, bleibt selbst aber gleich
+         extra     - weitere Felder, z. B. {vorlage: 3} */
+    async umbauen(code, { sections, drop = [], marks = {}, entfernt = [], extra = {} }) {
+      const patch = { ...extra, sections };
+      drop.forEach((id) => { patch["checks." + id] = fs.deleteField(); });
+      Object.entries(marks).forEach(([id, m]) => { patch["checks." + id] = m; });
+      if (entfernt.length) patch.entfernt = fs.arrayUnion(...entfernt);
+      await fs.updateDoc(tripRef(code), patch);
+    },
 
     /* ---- Stationen ---- */
 

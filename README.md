@@ -61,7 +61,7 @@ Backend in Chrome/Edge. Das JSON-Feld geht überall.
 | Reiter | Was drin ist |
 | --- | --- |
 | **Übersicht** | Zeitraum, Countdown, vier Kennzahlen, Wetteraussicht am Ziel, Mitreisende, Einladungscode |
-| **Packen** | Bereiche und Positionen, „je Person“ und „einer reicht“ |
+| **Packen** | Bereiche und Positionen, „je Person“ und „einer reicht“; unter *Ändern & löschen* Positionen und ganze Bereiche löschen (immer mit Rückfrage, nur für diese Reise; die Vorlage bleibt) |
 | **Plan** | Stationen mit Datum, Notiz und Ort; Sprung in den TripPlaner |
 | **Fotos** | Ordner je Person, Galerie, Großansicht, Ort nachtragen |
 | **Spots** | Challenge: schöne Orte markieren, Freunde herausfordern, Rangliste |
@@ -202,8 +202,30 @@ Die Startvorlage für neue Reisen steht in `data.js` als `TEMPLATE`:
 ]}                                       // mittlerer Eintrag = graue Notiz darunter
 ```
 
-Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen** (`reisebuddy-v18`
-→ `v19`). Der Service Worker holt eigene Dateien mit `no-cache`, fragt also beim
+Ein vierter Eintrag listet andere Namen, unter denen die Position in einer Reise
+schon stehen kann (`["Cap/Sonnenhut", "", "je", ["Kap"]]`). Die Vorlage ist
+nach Kategorien sortiert, innerhalb eines Bereichs steht Zusammengehöriges
+beieinander.
+
+Wird die Vorlage geändert, **`VORLAGE_STAND` in `data.js` hochzählen**: Laufende
+Reisen zeigen dann über der Packliste einmal „Packliste aufräumen & ergänzen“
+mit *Übernehmen* / *Nein danke* (`ordneNachVorlage`). Übernehmen
+
+- sortiert jede bekannte Position in ihren Bereich und an ihre Stelle und gibt
+  ihr Name und Notiz aus der Vorlage — ID, Art und Haken bleiben,
+- legt Doppeltes zusammen (die Haken wandern zur Position, die bleibt),
+- ergänzt, was fehlt,
+- lässt eigene Positionen in ihrem Bereich.
+
+Die Antwort steht im Reise-Dokument (`vorlage`), damit nicht jeder Mitreisende
+erneut gefragt wird.
+
+**Löschen gilt nur für die eine Reise.** Die Vorlage ist der Pool und bleibt
+unverändert. Gelöschte Namen stehen in `entfernt` im Reise-Dokument, damit das
+Aufräumen sie dort nicht wieder anbietet.
+
+Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen** (`reisebuddy-v19`
+→ `v20`). Der Service Worker holt eigene Dateien mit `no-cache`, fragt also beim
 Server nach — sonst liefert GitHub Pages bis zu zehn Minuten alte Dateien aus,
 und neue treffen auf alte Bausteine.
 

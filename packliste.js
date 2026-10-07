@@ -5,7 +5,7 @@
      einer reicht - erledigt, sobald irgendwer sie abgehakt hat (Zelt)
    Der Fortschritt beantwortet damit "was muss ich noch tun". */
 
-import { slug } from "./data.js";
+import { slug, ordneNachVorlage, VORLAGE_STAND } from "./data.js";
 import { memberKey, normalizeMarks } from "./store.js";
 
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
@@ -101,10 +101,22 @@ export function initPackliste(ctx) {
       sec.items.forEach((item) => list.appendChild(buildRow(sec, item)));
       list.appendChild(buildAdder(sec));
 
+      // Ganzen Bereich loeschen - nur im Bearbeiten-Modus sichtbar
+      const secDel = document.createElement("li");
+      secDel.className = "sec-del-li";
+      secDel.hidden = true;
+      const secDelBtn = document.createElement("button");
+      secDelBtn.type = "button";
+      secDelBtn.className = "linkish danger";
+      secDelBtn.textContent = "Bereich „" + sec.name + "“ löschen";
+      secDelBtn.addEventListener("click", () => removeSection(sec.id));
+      secDel.appendChild(secDelBtn);
+      list.appendChild(secDel);
+
       root.appendChild(head);
       root.appendChild(list);
       host.appendChild(root);
-      secNodes[sec.id] = { root, head, list, count: head.querySelector(".count") };
+      secNodes[sec.id] = { root, head, list, secDel, count: head.querySelector(".count") };
     });
     // Beim ersten Aufbau gleiten die Bereiche beim Scrollen herein.
     if (ersterBau && ctx.motion) { ersterBau = false; ctx.motion.scrollIn(host.children); }
@@ -306,6 +318,7 @@ export function initPackliste(ctx) {
         }
       });
 
+      sn.secDel.hidden = !editing;
       sn.count.textContent = done + "/" + sec.items.length;
       sn.root.classList.toggle("done", sec.items.length > 0 && done === sec.items.length);
       const collapsed = ui.collapsed.includes(sec.id) && !editing;
@@ -322,7 +335,69 @@ export function initPackliste(ctx) {
     $("bar").setAttribute("aria-valuenow", String(c.pct));
     $("resetHint").textContent = "Löscht die Haken für alle in der Reise, nicht nur bei dir.";
     syncCollapseChip();
+    paintVorschlag();
   }
+
+  /* ---- Packliste auf den Stand der Vorlage bringen ----
+     Laufende Reisen fragen einmal pro Vorlagen-Stand nach: Fehlendes ergaenzen,
+     alles in den passenden Bereich sortieren, Doppeltes zusammenlegen. Die
+     Antwort steht im Reise-Dokument, damit nicht jeder Mitreisende erneut
+     gefragt wird. */
+
+  let vorschlag = null;
+
+  function paintVorschlag() {
+    const box = $("vorschlag");
+    vorschlag = null;
+    if ((ctx.trip.vorlage || 0) < VORLAGE_STAND) {
+      const v = ordneNachVorlage(ctx.trip.sections, ctx.trip.entfernt, ctx.trip.checks);
+      if (v.neu.length || v.verschoben || v.doppelt.length) vorschlag = v;
+    }
+    box.hidden = !vorschlag;
+    if (!vorschlag) return;
+    const v = vorschlag;
+    $("vorschlagTitel").textContent = "Packliste aufräumen & ergänzen";
+    const teile = [];
+    if (v.neu.length) {
+      teile.push(v.neu.length + (v.neu.length === 1 ? " neue Position" : " neue Positionen") +
+        " (u. a. " + v.neu.slice(0, 4).join(", ") + (v.neu.length > 4 ? " …" : "") + ")");
+    }
+    if (v.verschoben) teile.push(v.verschoben + " in die passende Kategorie einsortiert");
+    if (v.doppelt.length) {
+      teile.push(v.doppelt.length + " doppelt (" + v.doppelt.map((d) => d.label).join(", ") + ") — eine fliegt raus");
+    }
+    $("vorschlagListe").textContent = teile.join(" · ") + ". Haken bleiben erhalten.";
+  }
+
+  $("vorschlagJa").addEventListener("click", async () => {
+    if (!vorschlag) return;
+    const v = vorschlag;
+    const checks = ctx.trip.checks || {};
+    // Haken einer doppelten Position wandern zur Position, die bleibt
+    const marks = {};
+    v.doppelt.forEach((d) => {
+      const von = normalizeMarks(checks[d.id]);
+      if (!Object.keys(von).length) return;
+      marks[d.keepId] = { ...von, ...(marks[d.keepId] || normalizeMarks(checks[d.keepId])) };
+    });
+    try {
+      await ctx.store.umbauen(code, {
+        sections: v.sections,
+        drop: v.doppelt.map((d) => d.id),
+        marks,
+        extra: { vorlage: VORLAGE_STAND }
+      });
+      const n = v.neu.length;
+      ctx.toast(n ? n + (n === 1 ? " Position" : " Positionen") + " ergänzt, alles einsortiert."
+                  : "Alles einsortiert.");
+    } catch (err) { ctx.toast("Konnte nicht gespeichert werden."); }
+  });
+
+  $("vorschlagNein").addEventListener("click", async () => {
+    $("vorschlag").hidden = true;
+    try { await ctx.store.updateTrip(code, { vorlage: VORLAGE_STAND }); }
+    catch (err) { ctx.toast("Konnte nicht gespeichert werden."); }
+  });
 
   /* Ist durch meinen Haken gerade ein Bereich oder die ganze Liste fertig
      geworden? Dann gibt es eine Feier. Haken der anderen kommen still an. */
@@ -437,15 +512,66 @@ export function initPackliste(ctx) {
     }
   }
 
-  async function removeItem(sectionId, itemId) {
-    const sections = structuredClone(ctx.trip.sections);
-    const sec = sections.find((s) => s.id === sectionId);
+  /* ---- Loeschen, immer mit Rueckfrage ---- */
+
+  const dlgDel = $("dlgDel");
+  let beiJa = null;
+  $("delOk").addEventListener("click", () => {
+    const los = beiJa;
+    beiJa = null;
+    dlgDel.close();
+    if (los) los();
+  });
+  dlgDel.addEventListener("close", () => { beiJa = null; });
+
+  function nachfragen(titel, text, knopf, los) {
+    $("delTitel").textContent = titel;
+    $("delText").textContent = text;
+    $("delOk").textContent = knopf;
+    beiJa = los;
+    dlgDel.showModal();
+  }
+
+  function removeItem(sectionId, itemId) {
+    const sec = (ctx.trip.sections || []).find((s) => s.id === sectionId);
+    const item = sec && sec.items.find((i) => i.id === itemId);
+    if (!item) return;
+    const wer = Object.values(marksOf(itemId)).map((m) => m.by).filter(Boolean);
+    nachfragen(
+      "„" + item.label + "“ löschen?",
+      "Sie verschwindet nur aus dieser Reise (für alle Mitreisenden). In der Vorlage für neue Reisen bleibt sie." +
+        (wer.length ? " Abgehakt hatten sie schon: " + wer.join(", ") + "." : ""),
+      "Löschen",
+      async () => {
+        const sections = structuredClone(ctx.trip.sections);
+        const s = sections.find((x) => x.id === sectionId);
+        if (!s) return;
+        s.items = s.items.filter((i) => i.id !== itemId);
+        try {
+          await ctx.store.umbauen(code, { sections, drop: [itemId], entfernt: [slug(item.label)] });
+          ctx.toast("„" + item.label + "“ gelöscht.");
+        } catch (err) { ctx.toast("Konnte nicht gelöscht werden."); }
+      });
+  }
+
+  function removeSection(sectionId) {
+    const sec = (ctx.trip.sections || []).find((s) => s.id === sectionId);
     if (!sec) return;
-    sec.items = sec.items.filter((i) => i.id !== itemId);
-    try {
-      if ((ctx.trip.checks || {})[itemId]) await ctx.store.setMarks(code, itemId, null);
-      await ctx.store.setSections(code, sections);
-    } catch (err) { ctx.toast("Konnte nicht gespeichert werden."); }
+    const n = sec.items.length;
+    nachfragen(
+      "Bereich „" + sec.name + "“ löschen?",
+      (n ? "Der Bereich und " + (n === 1 ? "seine eine Position" : "alle " + n + " Positionen darin") +
+        " verschwinden nur aus dieser Reise, samt Haken. In der Vorlage für neue Reisen bleibt alles."
+        : "Der leere Bereich verschwindet aus dieser Reise."),
+      "Bereich löschen",
+      async () => {
+        const sections = structuredClone(ctx.trip.sections).filter((s) => s.id !== sectionId);
+        const ids = sec.items.map((i) => i.id).filter((id) => (ctx.trip.checks || {})[id]);
+        try {
+          await ctx.store.umbauen(code, { sections, drop: ids, entfernt: sec.items.map((i) => slug(i.label)) });
+          ctx.toast("Bereich „" + sec.name + "“ gelöscht.");
+        } catch (err) { ctx.toast("Konnte nicht gelöscht werden."); }
+      });
   }
 
   async function setKind(sectionId, itemId) {

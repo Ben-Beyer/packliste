@@ -635,6 +635,26 @@ main{padding-block:16px 8px}
 .del:hover{color:var(--signal);border-color:var(--signal)}
 .del svg{width:15px;height:15px}
 
+.sec-del-li{border-top:1px solid var(--line);padding:2px 0 6px}
+.sec-del-li .linkish{margin-top:6px}
+
+.btn.danger{background:var(--signal);border-color:var(--signal);color:#fff;font-weight:600}
+.btn.danger:hover{filter:brightness(.92)}
+
+/* Hinweis: neue Positionen aus der Vorlage */
+.vorschlag{
+  display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 12px;
+  margin:4px 0 14px;padding:14px;border-radius:var(--radius);
+  background:var(--accent-wash);
+  border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.vorschlag[hidden]{display:none}
+.vorschlag-icon{font-size:20px;line-height:1.2;flex:none}
+.vorschlag-text{flex:1 1 200px;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:13.5px;color:var(--ink-soft);line-height:1.45}
+.vorschlag-text b{color:var(--ink);font-size:14.5px}
+.vorschlag-actions{display:flex;gap:8px;width:100%}
+.vorschlag-actions .btn{flex:1;min-height:42px}
+
 li.is-hidden{display:none}
 
 .add-open{
