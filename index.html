@@ -23,6 +23,28 @@
 </head>
 <body>
 
+<!-- ============ Hintergrund für alle Bildschirme ============ -->
+<div class="amb" aria-hidden="true">
+  <span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span>
+  <svg class="dash-topo" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="currentColor" stroke-width="1.1">
+      <path d="M-50 620C120 560 230 640 380 600s260-130 420-110 260 120 460 60"/>
+      <path d="M-50 560C110 500 240 580 380 540s260-140 430-120 250 110 450 50"/>
+      <path d="M-50 500C100 440 250 520 390 480s270-150 440-130 240 100 430 40"/>
+      <path d="M-50 440C90 380 260 460 400 420s280-160 450-140 230 90 410 30"/>
+      <path d="M-50 380C80 320 270 400 410 360s290-170 460-150 220 80 390 20"/>
+      <path d="M-50 320C70 260 280 340 420 300s300-180 470-160 210 70 370 10"/>
+      <path d="M640 250c40-30 110-34 150-6s30 80-20 96-120 10-140-30 0-50 10-60z"/>
+      <path d="M670 262c26-18 74-20 98-2s18 52-14 62-78 6-90-20 0-32 6-40z"/>
+      <path d="M200 160c60-40 160-30 190 20s-30 100-110 96-140-70-80-116z"/>
+    </g>
+  </svg>
+  <span class="amb-licht" id="ambLicht"></span>
+  <span class="dash-grain"></span>
+</div>
+
+<div class="fortschritt" id="fortschritt" aria-hidden="true"></div>
+
 <!-- ============ Vorhang ============ -->
 <div class="loader" id="loader">
   <div class="loader__inner">
@@ -65,24 +87,6 @@
 
 <!-- ============ Dashboard ============ -->
 <section class="screen dash" id="screenHome" hidden>
-  <div class="dash-bg" aria-hidden="true">
-    <span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span>
-    <svg class="dash-topo" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
-      <g fill="none" stroke="currentColor" stroke-width="1.1">
-        <path d="M-50 620C120 560 230 640 380 600s260-130 420-110 260 120 460 60"/>
-        <path d="M-50 560C110 500 240 580 380 540s260-140 430-120 250 110 450 50"/>
-        <path d="M-50 500C100 440 250 520 390 480s270-150 440-130 240 100 430 40"/>
-        <path d="M-50 440C90 380 260 460 400 420s280-160 450-140 230 90 410 30"/>
-        <path d="M-50 380C80 320 270 400 410 360s290-170 460-150 220 80 390 20"/>
-        <path d="M-50 320C70 260 280 340 420 300s300-180 470-160 210 70 370 10"/>
-        <path d="M640 250c40-30 110-34 150-6s30 80-20 96-120 10-140-30 0-50 10-60z"/>
-        <path d="M670 262c26-18 74-20 98-2s18 52-14 62-78 6-90-20 0-32 6-40z"/>
-        <path d="M200 160c60-40 160-30 190 20s-30 100-110 96-140-70-80-116z"/>
-      </g>
-    </svg>
-    <span class="dash-grain"></span>
-  </div>
-
   <header class="dash-top wrap-wide">
     <div class="dash-brand">
       <span class="dash-brand-mark" aria-hidden="true">
@@ -147,7 +151,7 @@
       </button>
     </div>
 
-    <section class="dash-next" id="homeNext" hidden>
+    <section class="dash-next tilt" id="homeNext" hidden>
       <div class="next-links">
         <div class="eyebrow">Nächste Reise</div>
         <h2 class="next-name" id="nextName"></h2>
@@ -397,34 +401,52 @@
 
   <!-- ---- Übersicht ---- -->
   <main class="wrap panel" id="panelOverview" hidden>
-    <div class="hero-card">
-      <div class="hero-when" id="tripWhen">Kein Zeitraum eingetragen</div>
-      <div class="hero-count" id="tripCountdown"></div>
-      <button type="button" class="btn ghost" id="tripEditBtn">Name &amp; Zeitraum ändern</button>
+    <div class="hero-card tilt">
+      <div class="hero-links">
+        <div class="eyebrow">Eure Reise</div>
+        <div class="hero-when" id="tripWhen">Kein Zeitraum eingetragen</div>
+        <div class="hero-big"><b id="heroZahl">–</b><span id="heroEinheit"></span></div>
+        <div class="hero-count" id="tripCountdown"></div>
+        <div class="hero-knoepfe">
+          <button type="button" class="btn ghost" id="tripEditBtn">Name &amp; Zeitraum</button>
+          <button type="button" class="btn primary" id="heroPlaner">Route planen</button>
+        </div>
+      </div>
+      <div class="next-ring hero-ring" id="heroRing" style="--p:0"><span id="heroRingZahl">0%</span><small>gepackt</small></div>
     </div>
 
     <div class="tiles">
-      <button type="button" class="tile" data-goto="pack">
+      <button type="button" class="tile tilt" data-goto="pack">
         <span class="tile-label">Packliste</span>
         <span class="tile-value"><b id="tilePackDone">0</b><small>/<span id="tilePackAll">0</span></small></span>
         <span class="tile-note" id="tilePackNote">für dich erledigt</span>
       </button>
-      <button type="button" class="tile" data-goto="plan">
+      <button type="button" class="tile tilt" data-goto="plan">
         <span class="tile-label">Stationen</span>
         <span class="tile-value"><b id="tileStops">0</b></span>
         <span class="tile-note" id="tileStopsNote">geplant</span>
       </button>
-      <button type="button" class="tile" data-goto="photos">
+      <button type="button" class="tile tilt" data-goto="photos">
         <span class="tile-label">Fotos</span>
         <span class="tile-value"><b id="tilePhotos">0</b></span>
         <span class="tile-note" id="tilePhotosNote">hochgeladen</span>
       </button>
-      <button type="button" class="tile" data-goto="spots">
+      <button type="button" class="tile tilt" data-goto="spots">
         <span class="tile-label">Spots</span>
         <span class="tile-value"><b id="tileSpots">0</b></span>
         <span class="tile-note" id="tileSpotsNote">zu erobern</span>
       </button>
     </div>
+
+    <button type="button" class="route-karte tilt" id="ovRoute">
+      <span class="rk-text">
+        <span class="eyebrow">TripPlaner</span>
+        <strong id="ovRouteTitel">Route planen</strong>
+        <small id="ovRouteInfo">Karte, Tage, Straßenroute, Orte entdecken</small>
+      </span>
+      <span class="rk-bild" id="ovRouteSkizze"></span>
+      <span class="rk-pfeil" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+    </button>
 
     <section class="card" id="weatherCard" hidden>
       <h2 class="card-title">Wetter <span id="weatherWo"></span></h2>
@@ -503,7 +525,7 @@
       <button type="button" class="btn primary" id="stopAddBtn">+ Station</button>
     </div>
 
-    <button type="button" class="planer-btn" id="planerBtn">
+    <button type="button" class="planer-btn tilt" id="planerBtn">
       <span class="planer-mark" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
       </span>

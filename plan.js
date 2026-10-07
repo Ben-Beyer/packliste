@@ -178,7 +178,7 @@ export function initPlan(ctx) {
     stops.forEach((s, i) => {
       const row = document.createElement("button");
       row.type = "button";
-      row.className = "stop";
+      row.className = "stop tilt";
 
       const num = document.createElement("span");
       num.className = "stop-num";
@@ -223,7 +223,7 @@ export function initPlan(ctx) {
       list.appendChild(row);
     });
 
-    ctx.stagger(list.children);
+    ctx.stagger(list.children, { y: 24, stagger: .06 });
   }
 
   return { render, open: openDialog };

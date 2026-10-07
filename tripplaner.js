@@ -174,6 +174,8 @@ export function initTripPlaner(ctx) {
   let zeigeSpots = true;
   let ziehe = null;
   let kachelFehler = 0, kachelArt = "", kacheln = null;
+  // Bewegung: Kamerafahrt beim Oeffnen, fallende Stecknadeln, gleitende Liste
+  let introOffen = false, bekannt = new Set(), tageErst = true, flipVor = null, summeAlt = {};
 
   /* ---- Zustand pro Reise, nur auf diesem Geraet ---- */
 
@@ -282,7 +284,14 @@ export function initTripPlaner(ctx) {
     return o;
   }
 
+  const reihenfolge = () => stopps().map((s) => s.id + (s.date || "")).join("|");
+
   async function speichere(neu, meldung) {
+    // Lage der Zeilen merken, damit sie gleich an ihren neuen Platz gleiten
+    if (ctx.motion && el.tage.offsetParent) {
+      const z = ctx.motion.flipZustand(el.tage.querySelectorAll(".pl-stopp"));
+      if (z) flipVor = { z, sig: reihenfolge(), bis: Date.now() + 4000 };
+    }
     try {
       await ctx.store.setStops(ctx.code, neu.map(sauber));
       if (meldung) ctx.toast(meldung);
@@ -401,6 +410,7 @@ export function initTripPlaner(ctx) {
     malTage();
     malSumme();
     malKarte();
+    kartenIntro();
     planeRoute(false);
     if (funde.length) malFunde();
   }
@@ -510,7 +520,15 @@ export function initTripPlaner(ctx) {
       el.tage.appendChild(sek);
     });
 
-    ctx.stagger(el.tage.children, { y: 14, stagger: .04 });
+    if (flipVor && flipVor.sig !== reihenfolge()) {
+      const z = flipVor.z;
+      flipVor = null;
+      ctx.motion.flip(z, el.tage.querySelectorAll(".pl-stopp"));
+    } else if (tageErst) {
+      tageErst = false;
+      ctx.stagger(el.tage.children, { y: 30, stagger: .07 });
+    }
+    if (flipVor && Date.now() > flipVor.bis) flipVor = null;
   }
 
   function knopf(titel, svg, fn) {
@@ -528,6 +546,7 @@ export function initTripPlaner(ctx) {
     const li = document.createElement("li");
     li.className = "pl-stopp" + (hatOrt(s) ? "" : " ohne-ort");
     li.dataset.id = s.id;
+    li.dataset.flipId = s.id;
 
     if (leg) {
       const e = document.createElement("div");
@@ -657,9 +676,16 @@ export function initTripPlaner(ctx) {
     el.summe.textContent = "";
     zellen.forEach(([k, v, u]) => {
       const d = document.createElement("div");
-      d.className = "pl-zelle";
+      d.className = "pl-zelle tilt";
       d.innerHTML = `<span class="pl-zelle-k">${k}</span><b class="pl-zelle-v">${escapeHtml(v)}</b><small>${escapeHtml(u)}</small>`;
       el.summe.appendChild(d);
+      // Geaenderte Werte zaehlen hoch und ploppen kurz
+      if (ctx.motion && summeAlt[k] !== undefined && summeAlt[k] !== v) {
+        const b = d.querySelector("b");
+        ctx.motion.zaehle(b);
+        ctx.motion.plopp(d, 1.08);
+      }
+      summeAlt[k] = v;
     });
   }
 
@@ -767,17 +793,37 @@ export function initTripPlaner(ctx) {
   /* Der Bildschirm ist sichtbar geworden: Karte laden bzw. neu vermessen. */
   async function activate() {
     routeGezeichnet = "";
+    introOffen = true;
+    bekannt = new Set();
+    tageErst = true;
+    summeAlt = {};
     setzePane(ui.pane, true);
     await karte();
+    if (map) map.invalidateSize();
     plSig = "";
     render();
     if (!map) return;
     requestAnimationFrame(() => {
       if (!map) return;
       map.invalidateSize();
-      passend(false);
       setzePane(ui.pane, true);
     });
+  }
+
+  /* Kamerafahrt: aus der Weite auf die Route herunter. */
+  function kartenIntro() {
+    if (!introOffen || !map || !ctx.trip) return;
+    introOffen = false;
+    const pts = stopps().filter(hatOrt);
+    if (!pts.length) return;
+    if (!(ctx.motion && ctx.motion.aktiv())) { passend(false); return; }
+    const b = L.latLngBounds(pts.map((p) => [p.lat, p.lon]));
+    const ziel = pts.length === 1 ? 12 : Math.min(14, map.getBoundsZoom(b, false, L.point(92, 92)));
+    map.setView(b.getCenter(), Math.max(3, ziel - 6), { animate: false });
+    setTimeout(() => {
+      if (pts.length === 1) map.flyTo([pts[0].lat, pts[0].lon], 12, { duration: 1.9, easeLinearity: .2 });
+      else map.flyToBounds(b, { padding: [46, 46], maxZoom: 14, duration: 1.9, easeLinearity: .2 });
+    }, 120);
   }
 
   let resizeUhr = null;
@@ -793,12 +839,18 @@ export function initTripPlaner(ctx) {
     if (!map) return;
     schichten.stopps.clearLayers();
     markerVon = new Map();
+    const erstesMal = bekannt.size === 0;
+    let welle = 0;
     flach(eimer()).forEach((s, i) => {
       if (!hatOrt(s)) return;
+      // Neue Stecknadeln fallen auf die Karte, beim Oeffnen alle nacheinander
+      const neu = !bekannt.has(s.id);
+      bekannt.add(s.id);
+      const fall = neu ? ` fall" style="--tag:${farbeFuer(s.date || "")};--verz:${erstesMal ? 300 + welle++ * 90 : 0}ms` : `" style="--tag:${farbeFuer(s.date || "")}`;
       const mk = L.marker([s.lat, s.lon], {
         icon: L.divIcon({
           className: "",
-          html: `<span class="pl-pin${s.date ? "" : " merk"}" style="--tag:${farbeFuer(s.date || "")}"><b>${i + 1}</b></span>`,
+          html: `<span class="pl-pin${s.date ? "" : " merk"}${fall}"><b>${i + 1}</b></span>`,
           iconSize: [30, 38], iconAnchor: [15, 36], popupAnchor: [0, -32]
         }),
         riseOnHover: true,

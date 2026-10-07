@@ -227,7 +227,7 @@ export function initPhotos(ctx) {
       }));
     }
     ordner().forEach((o) => albumGrid.appendChild(ordnerKarte(o)));
-    ctx.stagger(albumGrid.children);
+    ctx.stagger(albumGrid.children, { y: 40, scale: .92, stagger: .07 });
   }
 
   function hauptGrund(gruende) {
@@ -239,7 +239,7 @@ export function initPhotos(ctx) {
   function ordnerKarte(o) {
     const card = document.createElement("button");
     card.type = "button";
-    card.className = "album " + (o.klasse || "");
+    card.className = "album tilt " + (o.klasse || "");
 
     const mosaik = document.createElement("span");
     mosaik.className = "album-mosaik";
@@ -322,7 +322,7 @@ export function initPhotos(ctx) {
       grid.appendChild(cell);
     });
 
-    ctx.stagger(grid.children);
+    ctx.stagger(grid.children, { y: 26, scale: .8, stagger: .025 });
   }
 
   function thumbUrl(p) {

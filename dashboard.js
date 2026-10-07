@@ -106,7 +106,7 @@ export function initDashboard(ctx) {
     kw.textContent = "";
     kpis.forEach(([k, v, suf, note]) => {
       const d = document.createElement("div");
-      d.className = "kpi";
+      d.className = "kpi tilt";
       d.innerHTML = `<span class="kpi-k">${k}</span><b class="kpi-v"><span data-zahl="${v}" data-suffix="${escapeHtml(suf)}">${v.toLocaleString("de-DE")}${suf}</span></b><small>${escapeHtml(note)}</small>`;
       kw.appendChild(d);
     });
@@ -172,7 +172,7 @@ export function initDashboard(ctx) {
 
   function reiseZeile(code, trip) {
     const row = document.createElement("article");
-    row.className = "dash-reise";
+    row.className = "dash-reise tilt";
     if (!trip) {
       row.classList.add("weg");
       row.innerHTML = `<div class="dr-text"><strong>Reise ${escapeHtml(code)}</strong><small>Nicht gefunden – gelöscht oder falscher Code.</small></div>`;
@@ -206,7 +206,7 @@ export function initDashboard(ctx) {
       const tage = reiseTage(trip).length;
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "pc-karte";
+      b.className = "pc-karte tilt";
       b.innerHTML =
         `<span class="pc-bild">${skizze(stops, 200, 110) || '<span class="pc-leer">Noch keine Route</span>'}</span>`
         + `<span class="pc-text"><strong></strong>`

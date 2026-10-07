@@ -24,6 +24,9 @@ export function initPackliste(ctx) {
   let nodes = {};
   let secNodes = {};
   let code = null;
+  let ersterBau = true;
+  let getippt = 0;            // wann ich zuletzt selbst einen Haken gesetzt habe
+  let vorher = null;          // Stand beim letzten Malen: {secs: {id: fertig}, alle, pct}
 
   /* ---- Einstellungen pro Reise, nur auf diesem Geraet ---- */
 
@@ -49,6 +52,8 @@ export function initPackliste(ctx) {
     nodes = {};
     secNodes = {};
     host.textContent = "";
+    ersterBau = true;
+    vorher = null;
     $("hideDone").setAttribute("aria-pressed", ui.hideDone ? "true" : "false");
     $("editBtn").setAttribute("aria-pressed", "false");
     if (addSectionForm) { addSectionForm.remove(); addSectionForm = null; }
@@ -101,6 +106,8 @@ export function initPackliste(ctx) {
       host.appendChild(root);
       secNodes[sec.id] = { root, head, list, count: head.querySelector(".count") };
     });
+    // Beim ersten Aufbau gleiten die Bereiche beim Scrollen herein.
+    if (ersterBau && ctx.motion) { ersterBau = false; ctx.motion.scrollIn(host.children); }
   }
 
   function buildAdder(sec) {
@@ -176,7 +183,17 @@ export function initPackliste(ctx) {
     const meta = document.createElement("span");
     meta.className = "meta";
     btn.querySelector(".label").appendChild(meta);
-    btn.addEventListener("click", () => { if (!editing) toggle(item); });
+    btn.addEventListener("click", () => {
+      if (editing) return;
+      // Sofort feiern, nicht erst wenn der Speicher antwortet
+      if (btn.getAttribute("aria-checked") !== "true" && ctx.motion) {
+        const box = btn.querySelector(".box");
+        ctx.motion.feiern(box, { menge: 12, weite: .6 });
+        ctx.motion.plopp(box, 1.45);
+      }
+      getippt = Date.now();
+      toggle(item);
+    });
 
     const kindBtn = document.createElement("button");
     kindBtn.type = "button";
@@ -298,12 +315,52 @@ export function initPackliste(ctx) {
     });
 
     const c = count();
+    feiereUebergaenge(trip, me, c);
     $("tallyDone").textContent = c.done;
     $("tallyTotal").textContent = c.total;
     $("fill").style.width = c.pct + "%";
     $("bar").setAttribute("aria-valuenow", String(c.pct));
     $("resetHint").textContent = "Löscht die Haken für alle in der Reise, nicht nur bei dir.";
     syncCollapseChip();
+  }
+
+  /* Ist durch meinen Haken gerade ein Bereich oder die ganze Liste fertig
+     geworden? Dann gibt es eine Feier. Haken der anderen kommen still an. */
+  function feiereUebergaenge(trip, me, c) {
+    const jetzt = { secs: {}, alle: c.total > 0 && c.done === c.total, pct: c.pct };
+    (trip.sections || []).forEach((sec) => {
+      jetzt.secs[sec.id] = sec.items.length > 0 && sec.items.every((i) => isDone(i, me));
+    });
+    const frisch = Date.now() - getippt < 5000;
+    const m = ctx.motion;
+    if (vorher && m) {
+      if (frisch && jetzt.alle && !vorher.alle) {
+        getippt = 0;
+        m.konfetti({ menge: 170 });
+        m.banner("Alles gepackt!", "Jetzt kann's losgehen.", "🎒");
+      } else if (frisch) {
+        Object.keys(jetzt.secs).forEach((id) => {
+          if (!jetzt.secs[id] || vorher.secs[id] !== false) return;
+          const sn = secNodes[id];
+          if (!sn) return;
+          const badge = sn.head.querySelector(".badge");
+          m.feiern(badge, { menge: 26, weite: 1.3 });
+          m.ring(sn.root, null);
+          if (m.aktiv()) {
+            m.gsap.fromTo(badge, { rotate: -200, scale: .3 }, { rotate: 0, scale: 1, duration: 1, ease: "elastic.out(1, .45)", clearProps: "transform" });
+            m.gsap.fromTo(sn.root, { boxShadow: "0 0 0 0 rgba(84,199,149,.75)" }, { boxShadow: "0 0 0 18px rgba(84,199,149,0)", duration: 1.1, ease: "expo.out", clearProps: "boxShadow" });
+          }
+        });
+      }
+      if (jetzt.pct !== vorher.pct) {
+        const fill = $("fill");
+        fill.classList.remove("glanz");
+        void fill.offsetWidth;
+        fill.classList.add("glanz");
+        if (m.aktiv()) m.plopp($("tallyDone"), 1.4);
+      }
+    }
+    vorher = jetzt;
   }
 
   function tag(text, cls) {

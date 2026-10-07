@@ -198,7 +198,7 @@ export function initSpots(ctx) {
     zeichneRangliste(spots);
 
     spots.forEach((s) => list.appendChild(spotKarte(s)));
-    ctx.stagger(list.children);
+    ctx.stagger(list.children, { y: 34, stagger: .08 });
   }
 
   function zeichneRangliste(spots) {
@@ -246,7 +246,7 @@ export function initSpots(ctx) {
     const ichWarDa = !!done[me];
 
     const card = document.createElement("article");
-    card.className = "spot" + (ichWarDa ? " erledigt" : "");
+    card.className = "spot tilt" + (ichWarDa ? " erledigt" : "");
 
     const foto = (ctx.photos || []).find((p) => p.id === s.photoId);
     const head = document.createElement("div");
@@ -323,9 +323,16 @@ export function initSpots(ctx) {
     warDa.className = "btn" + (ichWarDa ? "" : " primary");
     warDa.textContent = ichWarDa ? "Doch nicht" : "Ich war da!";
     warDa.addEventListener("click", async () => {
+      // Punkt vorher merken - nach dem Speichern ist der Knopf neu gebaut.
+      const r = warDa.getBoundingClientRect();
+      const punkt = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       try {
         await ctx.store.setSpotMark(ctx.code, s.id, "done", me, ichWarDa ? null : { name: ctx.user });
-        if (!ichWarDa) ctx.feiern(warDa);
+        if (!ichWarDa && ctx.motion) {
+          ctx.motion.feiern(punkt, { menge: 30, weite: 1.4, farben: ["#E0B341", "#F2D27A", "#C4862A", "#FFF1C2"] });
+          ctx.motion.konfetti({ menge: 90, farben: ["#E0B341", "#F2D27A", "#C4862A", "#FFF1C2", "#0F6E4F"] });
+          ctx.motion.banner("Spot erobert!", s.title || "", "⭐");
+        }
       } catch (e) { ctx.toast("Konnte nicht gespeichert werden."); }
     });
     knoepfe.appendChild(warDa);

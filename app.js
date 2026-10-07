@@ -17,7 +17,8 @@ import { initPlan } from "./plan.js";
 import { initPhotos } from "./photos.js";
 import { initSpots } from "./spots.js";
 import { initMap, formatDate, haversine } from "./mapview.js";
-import { initTripPlaner } from "./tripplaner.js";
+import { initTripPlaner, skizze, routenInfo } from "./tripplaner.js";
+import { kmText, zeitText } from "./routing.js";
 import { initDashboard } from "./dashboard.js";
 import { initMotion } from "./motion.js";
 import { holeWetter, passendeTage, beschreibung, symbol } from "./weather.js";
@@ -108,7 +109,8 @@ function toast(msg) {
   el.textContent = msg;
   el.hidden = false;
   if (ctx.motion && ctx.motion.aktiv()) {
-    ctx.motion.gsap.fromTo(el, { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: .38, ease: "expo.out" });
+    ctx.motion.gsap.fromTo(el, { y: 40, opacity: 0, scale: .85 },
+      { y: 0, opacity: 1, scale: 1, duration: .7, ease: "elastic.out(1, .6)", overwrite: true });
   }
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.hidden = true; }, 3600);
@@ -174,7 +176,9 @@ function openGate({ changing }) {
 
   showScreen("screenName");
   if (ctx.motion) {
-    ctx.motion.stagger([$("gateTitle"), $("gateText"), $("nameForm")], { y: 18, stagger: .07 });
+    ctx.motion.stagger([$("gateText"), $("nameForm")], { y: 18, stagger: .09 });
+    ctx.motion.worte($("gateTitle"), { verz: .1 });
+    ctx.motion.plopp(document.querySelector("#screenName .gate-mark"), 1.6);
   }
   if (matchMedia("(pointer: fine)").matches) $("nameInput").focus();
 }
@@ -256,7 +260,7 @@ async function renderTrips() {
   trips.forEach(({ code, trip }) => {
     const card = document.createElement("button");
     card.type = "button";
-    card.className = "trip-card";
+    card.className = "trip-card tilt";
 
     if (!trip) {
       card.classList.add("weg");
@@ -318,7 +322,7 @@ async function renderTrips() {
     list.appendChild(card);
   });
 
-  if (ctx.motion) ctx.motion.stagger(list.children, { y: 26, stagger: .06 });
+  if (ctx.motion) ctx.motion.scrollIn(list.children);
 }
 
 /* ---------- Reise anlegen und beitreten ---------- */
@@ -489,8 +493,12 @@ function setCover(bytes) {
 
 function renderTrip() {
   const trip = ctx.trip;
-  $("tripName").textContent = trip.name || "Reise";
-  $("plName").textContent = trip.name || "Reise";
+  const neuerName = trip.name || "Reise";
+  [$("tripName"), $("plName")].forEach((h) => {
+    if (h.textContent.trim() === neuerName) return;
+    h.textContent = neuerName;
+    if (ctx.motion && !h.closest("[hidden]")) ctx.motion.worte(h, { dauer: .9 });
+  });
   $("tripCode").textContent = ctx.code;
   if (trip.cover) setCover(trip.cover);
 
@@ -524,9 +532,38 @@ function renderOverview() {
   countdown.textContent = countdownText(trip.start, trip.end);
   countdown.hidden = !countdown.textContent;
 
+  // Grosser Countdown und Pack-Ring
+  const heute = new Date(); heute.setHours(0, 0, 0, 0);
+  const ab = trip.start ? Math.round((new Date(trip.start + "T00:00:00") - heute) / 86400000) : null;
+  const zahl = $("heroZahl"), einheit = $("heroEinheit");
+  const vorher = zahl.textContent;
+  if (ab !== null && ab > 0) { zahl.textContent = ab; einheit.textContent = ab === 1 ? "Tag bis zur Abfahrt" : "Tage bis zur Abfahrt"; }
+  else if (ab === 0) { zahl.textContent = "Heute"; einheit.textContent = "geht's los"; }
+  else if (ab !== null) { zahl.textContent = "Los"; einheit.textContent = countdown.textContent; }
+  else { zahl.textContent = "–"; einheit.textContent = "Zeitraum festlegen"; }
+  countdown.hidden = countdown.hidden || ab !== null;
+
   const c = packCount();
   const m = ctx.motion;
   if (m) m.count($("tilePackDone"), c.done); else $("tilePackDone").textContent = c.done;
+  const ring = $("heroRing");
+  const alt = parseFloat(ring.style.getPropertyValue("--p")) || 0;
+  $("heroRingZahl").textContent = c.pct + "%";
+  if (m && m.aktiv() && alt !== c.pct) {
+    m.gsap.fromTo(ring, { "--p": alt }, { "--p": c.pct, duration: 1.2, ease: "power3.out" });
+  } else ring.style.setProperty("--p", c.pct);
+  if (m && vorher !== zahl.textContent) m.zaehle(zahl);
+
+  // Routenkarte zum TripPlaner
+  const info = routenInfo(ctx.code, trip);
+  const stopsAlle = trip.stops || [];
+  $("ovRouteTitel").textContent = stopsAlle.length ? (info.km ? kmText(info.km) + " Route" : stopsAlle.length + " Stationen") : "Route planen";
+  $("ovRouteInfo").textContent = stopsAlle.length
+    ? `${stopsAlle.length === 1 ? "1 Station" : stopsAlle.length + " Stationen"}${info.min ? " · " + zeitText(info.min) + " unterwegs" : ""} · im TripPlaner öffnen`
+    : "Karte, Tage, Straßenroute, Orte entdecken";
+  const sk = skizze(stopsAlle, 150, 80);
+  const skHost = $("ovRouteSkizze");
+  if (skHost.dataset.sig !== sk) { skHost.innerHTML = sk || '<span class="rk-leer"></span>'; skHost.dataset.sig = sk; zeichneSkizze(skHost); }
   $("tilePackAll").textContent = c.total;
   $("tilePackNote").textContent = c.total && c.done === c.total ? "alles erledigt" : "für dich erledigt";
 
@@ -562,6 +599,16 @@ function renderOverview() {
 
   $("codeBigInline").textContent = ctx.code;
   zeigeWetter();
+}
+
+function zeichneSkizze(host) {
+  const p = host.querySelector(".skizze-weg");
+  const g = ctx.motion && ctx.motion.aktiv() && ctx.motion.gsap;
+  if (!p || !g || !p.getTotalLength) return;
+  const len = p.getTotalLength();
+  g.fromTo(p, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 1.6, delay: .3, ease: "power2.inOut",
+    onComplete: () => { p.style.strokeDasharray = ""; p.style.strokeDashoffset = ""; } });
+  g.fromTo(host.querySelectorAll(".skizze-pkt"), { scale: 0, transformOrigin: "50% 50%" }, { scale: 1, duration: .5, stagger: .08, delay: .5, ease: "back.out(3)" });
 }
 
 function countdownText(start, end) {
@@ -677,7 +724,12 @@ function markerZuTab(name, sofort) {
   if (sofort || !ctx.motion || !ctx.motion.aktiv()) {
     marker.style.transform = `translateX(${x}px)`;
   } else {
-    ctx.motion.gsap.to(marker, { x, duration: .45, ease: "expo.out", overwrite: true });
+    // Der Marker fliesst wie ein Tropfen hinueber, das Symbol huepft.
+    const g = ctx.motion.gsap;
+    g.to(marker, { x, duration: .55, ease: "expo.out", overwrite: "auto" });
+    g.fromTo(marker, { scaleX: 3.2 }, { scaleX: 1, duration: .8, ease: "elastic.out(1, .45)" });
+    const svg = btn.querySelector("svg");
+    g.fromTo(svg, { y: 0, scale: 1 }, { keyframes: [{ y: -7, scale: 1.25, duration: .16, ease: "power2.out" }, { y: 0, scale: 1.06, duration: .5, ease: "bounce.out" }], clearProps: "transform" });
   }
 }
 
@@ -704,6 +756,8 @@ $("tripEditBtn").addEventListener("click", oeffneReiseDialog);
 /* Sprung zwischen Packliste und TripPlaner derselben Reise */
 $("tripZumPlaner").addEventListener("click", () => { location.hash = "#/planer/" + ctx.code; });
 $("planerBtn").addEventListener("click", () => { location.hash = "#/planer/" + ctx.code; });
+$("heroPlaner").addEventListener("click", () => { location.hash = "#/planer/" + ctx.code; });
+$("ovRoute").addEventListener("click", () => { location.hash = "#/planer/" + ctx.code; });
 $("plZurPackliste").addEventListener("click", () => { location.hash = "#/trip/" + ctx.code; });
 
 $("tripForm").addEventListener("submit", async (e) => {
@@ -791,7 +845,10 @@ $("leaveBtn").addEventListener("click", () => {
 document.querySelectorAll("dialog").forEach((d) => {
   const beobachter = new MutationObserver(() => {
     if (!ctx.motion) return;
-    if (d.open) ctx.motion.scrollStop(); else ctx.motion.scrollStart();
+    if (d.open) {
+      ctx.motion.scrollStop();
+      if (d.id !== "lightbox") ctx.motion.dialogIn(d);
+    } else ctx.motion.scrollStart();
   });
   beobachter.observe(d, { attributes: true, attributeFilter: ["open"] });
 });
@@ -817,6 +874,8 @@ function route() {
     const code = tripMatch[1].toUpperCase();
     if (ctx.code !== code) openTrip(code);
     showScreen("screenTrip");
+    // Erst jetzt hat die Reiterleiste eine Breite - Marker nachziehen
+    requestAnimationFrame(() => markerZuTab(tab, true));
     if (ctx.trip) renderTrip();
     return;
   }
@@ -861,7 +920,7 @@ function schritt(name) {
   ctx.stagger = (nodes, o) => ctx.motion.stagger(nodes, o);
   ctx.reveal = (el, o) => ctx.motion.reveal(el, o);
   ctx.openLightbox = (d, from) => ctx.motion.openLightbox(d, from);
-  ctx.feiern = (el) => ctx.motion.feiern(el);
+  ctx.feiern = (el, o) => ctx.motion.feiern(el, o);
 
   schritt("speicher");
   try {

@@ -149,16 +149,29 @@ Belegung.
 
 ## Bewegung
 
-GSAP (mit ScrollTrigger und Flip) und Lenis kommen vom CDN. Vorhang beim Start,
-Auftritte mit Versatz, laufende Zähler, ein Bild das aus der Kachel in die
-Großansicht fliegt, eine Route die sich selbst zeichnet, ein wandernder
-Reiter-Marker.
+GSAP (mit ScrollTrigger und Flip) und Lenis kommen vom CDN. Die Effekte sitzen in
+`motion.js` und wirken in der ganzen App, nicht nur auf dem Dashboard:
+
+| Wo | Was passiert |
+| --- | --- |
+| Überall | Hintergrund mit treibenden Farbflächen und Höhenlinien, ein Lichtschein folgt der Maus, Scroll-Fortschritt als Leiste oben |
+| Bildschirmwechsel | Kopfleiste fällt ein, Überschrift steigt Wort für Wort aus einer Maske, Inhalt kommt aus der Unschärfe |
+| Reiter | Inhalt baut sich gestaffelt auf, der Marker fließt wie ein Tropfen hinüber, das Symbol hüpft |
+| Karten | neigen sich in 3D zum Zeiger und tragen ein Licht (`.tilt`), Hauptknöpfe ziehen sich magnetisch zum Zeiger |
+| Jeder Tipp | schlägt eine Welle auf Knöpfen, Chips, Reitern und Karten |
+| Dialoge | federn aus der Tiefe herauf |
+| Packliste | Funken am Haken, Lichtring und drehendes Symbol bei fertigem Bereich, Konfetti und Banner bei „Alles gepackt!“, Glanz über den Balken, Bereiche gleiten beim Scrollen herein |
+| Spots | Gold-Konfetti und Banner „Spot erobert!“ |
+| Übersicht einer Reise | großer Countdown, Pack-Ring füllt sich, Routenskizze zeichnet sich, Titelbild zieht langsam heran |
+| TripPlaner | Kamerafahrt aus der Weite auf die Route, Stecknadeln fallen mit Ring auf die Karte, Route zeichnet sich, Stationen gleiten beim Umsortieren an ihren Platz (Flip), Kennzahlen zählen hoch |
 
 Zwei Sicherungen: Jedes CDN-Skript hat eine **Frist** (GSAP 6 s, Lenis 4 s) —
 antwortet das CDN nicht, startet die App ohne Animation statt gar nicht. Und wer
 im Betriebssystem *weniger Bewegung* eingestellt hat, bekommt still den
-Endzustand. Sanftes Scrollen (Lenis) läuft nur mit Maus und Trackpad; auf dem
-Handy bleibt das native Scrollen.
+Endzustand, ohne Konfetti und ohne Neigen. Ein Element wird nur dann
+unsichtbar gesetzt, wenn die Animation es auch sicher wieder hervorholt.
+Sanftes Scrollen (Lenis) läuft nur mit Maus und Trackpad; auf dem Handy bleibt
+das native Scrollen.
 
 ## Kostenlose Dienste
 
@@ -189,8 +202,8 @@ Die Startvorlage für neue Reisen steht in `data.js` als `TEMPLATE`:
 ]}                                       // mittlerer Eintrag = graue Notiz darunter
 ```
 
-Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen** (`reisebuddy-v17`
-→ `v18`). Der Service Worker holt eigene Dateien mit `no-cache`, fragt also beim
+Nach jeder Dateiänderung **`VERSION` in `sw.js` hochzählen** (`reisebuddy-v18`
+→ `v19`). Der Service Worker holt eigene Dateien mit `no-cache`, fragt also beim
 Server nach — sonst liefert GitHub Pages bis zu zehn Minuten alte Dateien aus,
 und neue treffen auf alte Bausteine.
 
